@@ -6,7 +6,7 @@
 
 <sub>ERP 管资源 · CRM 管客户 · OA 管流程 —— 决策呢？</sub>
 
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/) [![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE) [![Reasoner](https://img.shields.io/badge/Reasoner-OWL_2_DL_·_HermiT-8A2BE2?style=flat-square)](src/governanceops/resources/ontology/PROTOCOL.md) [![Methodology](https://img.shields.io/badge/Methodology-OntologyOps-6366f1?style=flat-square)](https://github.com/georgewangchn/OntologyOps)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/) [![Code: MIT](https://img.shields.io/badge/Code-MIT-22c55e?style=flat-square)](LICENSE) [![Protocol: CC BY 4.0](https://img.shields.io/badge/Protocol-CC_BY_4.0-3b82f6?style=flat-square)](src/governanceops/resources/ontology/LICENSE) [![Reasoner](https://img.shields.io/badge/Reasoner-OWL_2_DL_·_HermiT-8A2BE2?style=flat-square)](src/governanceops/resources/ontology/PROTOCOL.md) [![Methodology](https://img.shields.io/badge/Methodology-OntologyOps-6366f1?style=flat-square)](https://github.com/georgewangchn/OntologyOps)
 
 **本体即代码** · **LLM 只做提取** · **推理机做裁判** · **零侵入接入**
 
@@ -303,13 +303,18 @@ pytest
 
 ## License
 
-本仓库所有内容（代码、文档、随包分发的协议文件）均采用 **[MIT](LICENSE)** 许可协议。
+本仓库采用**分层许可**：
 
-> `src/governanceops/resources/ontology/` 下的协议规范（PROTOCOL.md、schema、conformance）的权威源在 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)，以 CC BY 4.0 发布。本副本随 GovernanceOps 代码包分发，适用 MIT 许可。作者为同一人，保留双重授权权利。
+| 资产类型 | 许可协议 | 覆盖范围 | 说明 |
+|---------|---------|---------|------|
+| **代码** | [MIT](LICENSE) | src/governanceops/ 代码、tests、demo | 自由使用、修改、商用 |
+| **协议规范** | [CC BY 4.0](src/governanceops/resources/ontology/LICENSE) | src/governanceops/resources/ontology/ | 署名 + 允许商业实现 |
+
+> `src/governanceops/resources/ontology/` 下的协议规范权威源在 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)，以 CC BY 4.0 发布。无论从哪个仓库获取，协议许可始终为 CC BY 4.0。
 
 项目名称使用指引见 [TRADEMARK.md](TRADEMARK.md)。
 
 <div align="center">
 <br>
-<sub>Built with OWL 2 DL, HermiT & 一条不肯让 LLM 进推理链的铁律 · MIT License</sub>
+<sub>Built with OWL 2 DL, HermiT & 一条不肯让 LLM 进推理链的铁律 · Code: MIT · Protocol: CC BY 4.0</sub>
 </div>

@@ -4,9 +4,17 @@
 
 ## 许可
 
-本仓库所有内容均采用 **[MIT](LICENSE)** 许可协议——自由使用、修改、商用，无需 CLA。
+本仓库采用**分层许可**：
 
-> `src/governanceops/resources/ontology/` 下的协议文件在 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)中以 CC BY 4.0 发布。本仓库的副本随代码包分发，适用 MIT。作者是同一人，保留双重授权权利。
+| 资产类型 | 许可协议 | 说明 |
+|---------|---------|------|
+| **代码** | [MIT](LICENSE) | 自由使用、修改、商用，无需 CLA |
+| **协议规范** | [CC BY 4.0](src/governanceops/resources/ontology/LICENSE) | 署名 + 允许商业实现 |
+
+`src/governanceops/resources/ontology/` 下的协议规范（PROTOCOL.md、schema、conformance）的权威源在 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)，无论从哪个仓库获取，协议许可始终为 CC BY 4.0。
+
+- **代码贡献**（MIT）：无需 CLA，MIT 已授权商用
+- **协议贡献**（CC BY 4.0）：提交即表示您授权您的贡献以 CC BY 4.0 许可发布，与协议规范保持一致
 
 项目名称使用指引见 [TRADEMARK.md](TRADEMARK.md)。
 
