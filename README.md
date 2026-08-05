@@ -299,6 +299,16 @@ pytest
 - **[OntologyOps](https://github.com/georgewangchn/OntologyOps)** — 本项目所实现的方法论与协议，含方法论体系与博客系列
 - [`PROTOCOL.md`](src/governanceops/resources/ontology/PROTOCOL.md) — Ontology Repo 支柱的协议契约（GovernanceOps 为其参考实现）
 
+---
+
+## License
+
+本仓库所有内容（代码、文档、随包分发的协议文件）均采用 **[MIT](LICENSE)** 许可协议。
+
+> `src/governanceops/resources/ontology/` 下的协议规范（PROTOCOL.md、schema、conformance）的权威源在 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)，以 CC BY 4.0 发布。本副本随 GovernanceOps 代码包分发，适用 MIT 许可。作者为同一人，保留双重授权权利。
+
+项目名称使用指引见 [TRADEMARK.md](TRADEMARK.md)。
+
 <div align="center">
 <br>
 <sub>Built with OWL 2 DL, HermiT & 一条不肯让 LLM 进推理链的铁律 · MIT License</sub>

@@ -2,6 +2,14 @@
 
 感谢你对 GovernanceOps 的兴趣！本文档描述开发流程和规范。
 
+## 许可
+
+本仓库所有内容均采用 **[MIT](LICENSE)** 许可协议——自由使用、修改、商用，无需 CLA。
+
+> `src/governanceops/resources/ontology/` 下的协议文件在 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)中以 CC BY 4.0 发布。本仓库的副本随代码包分发，适用 MIT。作者是同一人，保留双重授权权利。
+
+项目名称使用指引见 [TRADEMARK.md](TRADEMARK.md)。
+
 ---
 
 ## 开发环境
