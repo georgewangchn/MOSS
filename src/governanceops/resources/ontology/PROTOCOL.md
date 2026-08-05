@@ -1,6 +1,6 @@
 # OntologyOps — "Ontology Repo" 支柱协议 v1.0
 
-> **权威源**：[OntologyOps 仓库 · protocol/ontology-repo/](https://github.com/georgewangchn/OntologyOps/tree/main/protocol/ontology-repo)（CC BY 4.0）。
+> **权威源**：[OntologyOps 仓库 · ontologyops/](https://github.com/georgewangchn/OntologyOps/tree/main/ontologyops)（CC BY 4.0）。
 > 本副本随 GovernanceOps 代码包分发，许可与权威源一致：[CC BY 4.0](LICENSE)。
 >
 > 本文件是**抽象协议契约**（语义级、可移植）。它规定"一个实现要成为 OntologyOps

@@ -6,7 +6,7 @@
 （PROTOCOL.md、schema/ontology.schema.json、schema/conformance.yaml）
 均采用 CC BY 4.0 许可协议。
 
-> **权威源**：[OntologyOps 仓库 · protocol/ontology-repo/](https://github.com/georgewangchn/OntologyOps/tree/main/protocol/ontology-repo)（CC BY 4.0）。本副本随 GovernanceOps 代码包分发，许可与权威源一致。
+> **权威源**：[OntologyOps 仓库 · ontologyops/](https://github.com/georgewangchn/OntologyOps/tree/main/ontologyops)（CC BY 4.0）。本副本随 GovernanceOps 代码包分发，许可与权威源一致。
 
 ### 你可以：
 

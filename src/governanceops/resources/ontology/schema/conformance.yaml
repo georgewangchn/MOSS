@@ -6,7 +6,7 @@
 #   core       —— 领域中立的核心机制层（§1，任何领域都须满足）
 #   governance —— Governance Profile（§2.1，GovernanceOps 满足）
 # 一个实现的符合性 = 通过全部 core 条款 + 其目标 profile 的条款。
-protocol: ontologyops/ontology-repo
+protocol: ontologyops
 version: "1.0"
 clauses:
   # ── 核心机制层（领域中立） ──

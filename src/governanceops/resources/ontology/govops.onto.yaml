@@ -7,7 +7,7 @@
 # 由 LLM 生成 / 人审 PR / 版本化治理 (govops onto validate|build|diff|log|tag|rollback)。
 #
 # 校验它的正式协议 schema: ontology/schema/ontology.schema.json
-protocol: ontologyops/ontology-repo
+protocol: ontologyops
 protocol_version: "1.0"
 
 ontology:
