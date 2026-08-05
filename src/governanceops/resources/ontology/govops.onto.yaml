@@ -1,0 +1,115 @@
+# GovernanceOps 本体 — OntologyOps "Ontology Repo" 支柱的唯一事实源 (single source of truth)
+#
+# 这份 YAML 是"标准 OWL 2 DL 的一种对 LLM 友好、对 diff 友好的语法"。
+# 语义 = OWL 2 DL，不发明新语义：
+#   - build 时编译成 owlready2 TBox，交给 HermiT 做确定性分类推理
+#   - 同时可导出标准 W3C Turtle (ontology/build/govops.ttl) 供外部工具互操作
+# 由 LLM 生成 / 人审 PR / 版本化治理 (govops onto validate|build|diff|log|tag|rollback)。
+#
+# 校验它的正式协议 schema: ontology/schema/ontology.schema.json
+protocol: ontologyops/ontology-repo
+protocol_version: "1.0"
+
+ontology:
+  iri: "http://govops.org/ontology"
+  version: "0.2.0"            # TBox 语义版本，与仓库/发行版本解耦
+  label: "GovernanceOps Ontology"
+
+# DSL datatype 名 → Python 类型（编译器用）
+datatypes:
+  string: str
+  float: float
+  integer: int
+  boolean: bool
+
+concepts:
+  - {name: Decision, parent: Thing, comment: "治理决策"}
+  - {name: Issue,    parent: Thing, comment: "议题"}
+  - {name: Update,   parent: Thing, comment: "进展更新"}
+
+properties:
+  data:
+    - {name: hasOwner,      domain: Decision, range: string, functional: true}
+    - {name: hasDepartment, domain: Decision, range: string, functional: true}
+    - {name: hasDependency, domain: Decision, range: string, functional: true}
+    - {name: hasStatus,     domain: Decision, range: string, functional: true}
+    - {name: hasRiskLevel,  domain: Decision, range: string, functional: true}
+    - {name: hasPriority,   domain: Decision, range: string, functional: true}
+    - {name: hasProgress,   domain: Decision, range: float,  functional: true}
+    - {name: hasDeadline,   domain: Decision, range: string, functional: true}
+    - {name: hasTitle,      domain: Thing,    range: string, functional: true}
+    - {name: hasSource,     domain: Decision, range: string, functional: true}
+    - {name: hasCreatedAt,  domain: Decision, range: string, functional: true}
+  object:
+    - {name: hasUpdate, domain: Decision, range: Update, functional: false}
+
+# 定义类 = HermiT 分类目标。result_key 绑定 reason() 输出的 key（下游契约，不可改名）。
+defined_classes:
+  - name: GovernedDecision
+    parent: Decision
+    result_key: governed
+    comment: "hasOwner ∧ hasDeadline ∧ hasUpdate"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: some, property: hasOwner,    filler: {datatype: string}}
+        - {type: some, property: hasDeadline, filler: {datatype: string}}
+        - {type: some, property: hasUpdate,   filler: {class: Thing}}   # 原始定义即 some(Thing)，忠实保留
+
+  - name: HasOwnerDecision
+    parent: Decision
+    result_key: has_owner
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: some, property: hasOwner, filler: {datatype: string}}
+
+  - name: HasDeadlineDecision
+    parent: Decision
+    result_key: has_deadline
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: some, property: hasDeadline, filler: {datatype: string}}
+
+  - name: CriticalDecision
+    parent: Decision
+    result_key: critical
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasPriority, value: "P0"}
+
+  - name: HighPriorityDecision
+    parent: Decision
+    result_key: high_priority
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasPriority, value: "P1"}
+
+# 闭世界绑定：每个 property 在 Python 对象侧如何取值。
+# 供 (a) load_graph 装载 ABox、(b) 无 Java 时的 fallback 解释器 共用同一份定义，
+# 从而消除"HermiT 定义类"与"手写 fallback"两份事实源的漂移 (Phase C 生效)。
+abox_binding:
+  hasOwner:      {field: owner}
+  hasDeadline:   {field: deadline,    transform: isoformat}
+  hasDepartment: {field: department}
+  hasDependency: {field: dependency}
+  hasStatus:     {field: status}
+  hasRiskLevel:  {field: risk_level}
+  hasProgress:   {field: progress}
+  hasSource:     {field: source}
+  hasCreatedAt:  {field: created_at,  transform: isoformat}
+  hasTitle:      {field: title}
+  hasPriority:   {computed: compute_priority}      # 需 graph 上下文
+  hasUpdate:     {relation: updates_of_decision}
+
+# 预留段：闭世界过程式规则 (compute_priority / MISSING_*/STALE) 未来外置于此。
+# 本增量不实现，仅占位保持 schema 前向兼容。
+rules: []

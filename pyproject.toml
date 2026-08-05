@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "governanceops"
+version = "0.2.0"
+description = "GovernanceOps - 治理驱动的企业决策运行时系统 (Governance Runtime)；OntologyOps 方法论的参考实现"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [{name = "森林瀑布 (georgewangchn)"}]
+keywords = ["ontology", "OWL", "HermiT", "governance", "decision-runtime", "OntologyOps", "LLM", "reasoning"]
+dependencies = [
+    "click>=8.1",
+    "fastapi>=0.100",
+    "httpx>=0.27",
+    "owlready2>=0.50",
+    "pydantic>=2.0",
+    "rich>=13.0",
+    "python-dotenv>=1.0",
+    "uvicorn>=0.30",
+    "python-docx>=1.1",
+    "pypdf>=4.0",
+    "pyyaml>=6.0",
+    "jsonschema>=4.20",
+    "rdflib>=7.0",
+]
+
+[project.optional-dependencies]
+agent = [
+    "langchain>=0.3,<1.0",
+    "langchain-openai>=0.2",
+    "langgraph>=0.2",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+governanceops = "governanceops.cli.main:main"
+govops = "governanceops.cli.main:main"
+
+[project.urls]
+Repository = "https://github.com/georgewangchn/GovernanceOps"
+Methodology = "https://github.com/georgewangchn/OntologyOps"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+governanceops = [
+    "resources/ontology/*.yaml",
+    "resources/ontology/*.md",
+    "resources/ontology/schema/*.json",
+    "resources/ontology/schema/*.yaml",
+    "web/static/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
