@@ -2,9 +2,9 @@
 
 # MOSS
 
-**企业决策的第四象限**
+**ERP 管资源 · CRM 管客户 · OA 管流程 · MOSS 管决策**
 
-<sub>ERP 管资源 · CRM 管客户 · OA 管流程 —— 决策呢？</sub>
+<sub>让每一个决策可追踪、可验证、可持续执行</sub>
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/) [![Code: MIT](https://img.shields.io/badge/Code-MIT-22c55e?style=flat-square)](LICENSE) [![Protocol: CC BY 4.0](https://img.shields.io/badge/Protocol-CC_BY_4.0-3b82f6?style=flat-square)](src/moss/resources/ontology/LICENSE) [![Reasoner](https://img.shields.io/badge/Reasoner-OWL_2_DL_·_HermiT-8A2BE2?style=flat-square)](src/moss/resources/ontology/PROTOCOL.md) [![Methodology](https://img.shields.io/badge/Methodology-OntologyOps-6366f1?style=flat-square)](https://github.com/georgewangchn/OntologyOps)
 
