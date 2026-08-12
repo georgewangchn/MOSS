@@ -10,14 +10,14 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from governanceops.models import Decision, GovernanceGraph, Update
-from governanceops.ontorepo.conformance import run
-from governanceops.ontorepo.loader import default_dsl_path, load_model
+from moss.models import Decision, GovernanceGraph, Update
+from moss.ontorepo.conformance import run
+from moss.ontorepo.loader import default_dsl_path, load_model
 
 
 def test_dsl_validates():
     model = load_model(default_dsl_path())
-    assert model.ontology.iri == "http://govops.org/ontology"
+    assert model.ontology.iri == "http://moss.org/ontology"
     assert {c.name for c in model.concepts} >= {"Decision", "Issue", "Update"}
 
 
@@ -58,7 +58,7 @@ def _graph():
 
 def test_fallback_matches_defined_semantics(monkeypatch):
     """无 Java 时，DSL 驱动的闭世界 fallback 必须复刻定义类语义。"""
-    import governanceops.owl_ontology as oo
+    import moss.owl_ontology as oo
     monkeypatch.setattr(oo, "_java_checked", True)
     monkeypatch.setattr(oo, "_java_available", False)
     monkeypatch.setattr(oo, "_onto_instance", None)
@@ -72,7 +72,7 @@ def test_fallback_matches_defined_semantics(monkeypatch):
 @pytest.mark.skipif(__import__("shutil").which("java") is None, reason="HermiT 需 Java")
 def test_hermit_matches_fallback(monkeypatch):
     """有 Java 时，HermiT 分类必须与闭世界 fallback 一致（两条路径不漂移）。"""
-    import governanceops.owl_ontology as oo
+    import moss.owl_ontology as oo
     graph = _graph()
 
     monkeypatch.setattr(oo, "_onto_instance", None)

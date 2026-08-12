@@ -1,20 +1,22 @@
 <div align="center">
 
-# GovernanceOps
+# MOSS
 
 **企业决策的第四象限**
 
 <sub>ERP 管资源 · CRM 管客户 · OA 管流程 —— 决策呢？</sub>
 
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/) [![Code: MIT](https://img.shields.io/badge/Code-MIT-22c55e?style=flat-square)](LICENSE) [![Protocol: CC BY 4.0](https://img.shields.io/badge/Protocol-CC_BY_4.0-3b82f6?style=flat-square)](src/governanceops/resources/ontology/LICENSE) [![Reasoner](https://img.shields.io/badge/Reasoner-OWL_2_DL_·_HermiT-8A2BE2?style=flat-square)](src/governanceops/resources/ontology/PROTOCOL.md) [![Methodology](https://img.shields.io/badge/Methodology-OntologyOps-6366f1?style=flat-square)](https://github.com/georgewangchn/OntologyOps)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/) [![Code: MIT](https://img.shields.io/badge/Code-MIT-22c55e?style=flat-square)](LICENSE) [![Protocol: CC BY 4.0](https://img.shields.io/badge/Protocol-CC_BY_4.0-3b82f6?style=flat-square)](src/moss/resources/ontology/LICENSE) [![Reasoner](https://img.shields.io/badge/Reasoner-OWL_2_DL_·_HermiT-8A2BE2?style=flat-square)](src/moss/resources/ontology/PROTOCOL.md) [![Methodology](https://img.shields.io/badge/Methodology-OntologyOps-6366f1?style=flat-square)](https://github.com/georgewangchn/OntologyOps)
 
 **本体即代码** · **LLM 只做提取** · **推理机做裁判** · **零侵入接入**
 
 </div>
 
+> **改名公告**：本项目由 `GovernanceOps` 更名为 `MOSS`。远程仓库已迁移至 `github.com/georgewangchn/MOSS`，Python 包名 `governanceops` → `moss`，CLI 命令 `govops` → `moss`，workspace 目录 `~/.governance-ops/` → `~/.moss/`，环境变量 `GOVOPS_*` → `MOSS_*`。旧仓库地址将保留重定向。历史提交完整保留。
+
 企业软件三十年，管了资源、客户、流程，唯独没人管「决策」——会议结束后，决策就消亡了：没有追踪、没有问责、没有复盘。
 
-**GovernanceOps 补的就是这第四象限**——底下是实打实的 OWL 2 DL 与 HermiT Tableau 推理算法，不是又一个待办清单。它是 [OntologyOps](https://github.com/georgewangchn/OntologyOps) 方法论的参考实现：LLM 做提取、本体做约束、推理机做裁判，**LLM 永不进入推理链**。
+**MOSS 补的就是这第四象限**——底下是实打实的 OWL 2 DL 与 HermiT Tableau 推理算法，不是又一个待办清单。它是 [OntologyOps](https://github.com/georgewangchn/OntologyOps) 方法论的参考实现：LLM 做提取、本体做约束、推理机做裁判，**LLM 永不进入推理链**。
 
 ---
 
@@ -22,7 +24,7 @@
 
 - [快速开始](#快速开始)
 - [DEMO 演示](#demo-演示)
-- [为什么需要 GovernanceOps](#为什么需要-governanceops)
+- [为什么需要 MOSS](#为什么需要-moss)
 - [核心特性](#核心特性)
 - [架构](#架构)
 - [Ontology Repo](#ontology-repo把本体当代码治理)
@@ -40,8 +42,8 @@
 > **前置要求**：Python 3.10+。可选：Java 11+（HermiT 本体推理）、Ollama 或 OpenAI 兼容 API（LLM 提取）。
 
 ```bash
-git clone https://github.com/georgewangchn/GovernanceOps.git
-cd GovernanceOps
+git clone https://github.com/georgewangchn/MOSS.git
+cd MOSS
 python -m venv venv && source venv/bin/activate
 pip install -e ".[agent]"          # 最小安装（无 LLM）: pip install -e .
 ```
@@ -49,9 +51,9 @@ pip install -e ".[agent]"          # 最小安装（无 LLM）: pip install -e .
 三步跑通：
 
 ```bash
-govops init      # 交互式向导：配置工作目录、LLM、Java 检测
-govops demo      # 加载预置种子数据，立即体验完整治理流程
-govops serve     # 启动 Web 驾驶舱 → http://localhost:8000
+moss init      # 交互式向导：配置工作目录、LLM、Java 检测
+moss demo      # 加载预置种子数据，立即体验完整治理流程
+moss serve     # 启动 Web 驾驶舱 → http://localhost:8000
 ```
 
 > 先跑通 demo、看懂代码例子，再去看 [OntologyOps](https://github.com/georgewangchn/OntologyOps) 理解方法论与协议。先看能跑的，再看为什么。
@@ -78,14 +80,14 @@ python demo/scenario.py all   # 非交互：init → week1→4 → final 一键�
 
 ---
 
-## 为什么需要 GovernanceOps
+## 为什么需要 MOSS
 
 | 浪潮 | 管理对象 | 代表系统 | 决策？ |
 |:----:|:--------:|:--------:|:-----:|
 | 1990s | **资源** | ERP | — |
 | 2000s | **客户** | CRM | — |
 | 2010s | **流程** | OA/BPM | — |
-| **现在** | **决策** | **GovernanceOps** | **✓** |
+| **现在** | **决策** | **MOSS** | **✓** |
 
 每个组织都遇到过：
 
@@ -94,7 +96,7 @@ python demo/scenario.py all   # 非交互：init → week1→4 → final 一键�
 3. **无法监督上级** — 系统只向下问责，上级该支持没支持，无人知晓
 4. **治理效果不可量化** — 决策不是结构化对象，无法统计、预警、复盘
 
-GovernanceOps 的回答：**把决策变成可追踪、可验证、可持续执行的第一管理对象。** 从机制代替人治——
+MOSS 的回答：**把决策变成可追踪、可验证、可持续执行的第一管理对象。** 从机制代替人治——
 
 - 决策缺负责人或截止日期 → **ERROR，不可跳过**
 - 优先级 P0–P4 **完全由规则推断，不由人定**
@@ -203,26 +205,26 @@ HighPriorityDecision≡ Decision ⊓ (hasPriority = "P1")
 
 ## Ontology Repo：把本体当代码治理
 
-OntologyOps 六大支柱之一在本项目的落地。本体不再硬编码在 Python，而是一份**声明式 DSL**（[`govops.onto.yaml`](src/governanceops/resources/ontology/govops.onto.yaml)）作为唯一事实源——标准 OWL 2 DL 的对 LLM 友好、对 diff 友好的语法，编译后交 HermiT 推理，并可导出标准 W3C Turtle。
+OntologyOps 六大支柱之一在本项目的落地。本体不再硬编码在 Python，而是一份**声明式 DSL**（[`moss.onto.yaml`](src/moss/resources/ontology/moss.onto.yaml)）作为唯一事实源——标准 OWL 2 DL 的对 LLM 友好、对 diff 友好的语法，编译后交 HermiT 推理，并可导出标准 W3C Turtle。
 
 ```bash
-govops onto validate               # 校验 DSL（JSON Schema + 模型）
-govops onto show                   # 树形展示概念 / 属性 / 定义类
-govops onto build [--commit -m …]  # 编译成 OWL TBox，产出 govops.{owl,ttl,lock.json}
-govops onto log                    # 版本历史（HEAD → 根）
-govops onto diff [A] [B]           # 语义级 Diff（标注是否 breaking）
-govops onto tag <name> [ver]       # 打版本标签
-govops onto rollback <ver>         # 回滚：还原工作区 DSL 并前移 HEAD
-govops onto conformance [--json]   # 符合性自证报告
+moss onto validate               # 校验 DSL（JSON Schema + 模型）
+moss onto show                   # 树形展示概念 / 属性 / 定义类
+moss onto build [--commit -m …]  # 编译成 OWL TBox，产出 moss.{owl,ttl,lock.json}
+moss onto log                    # 版本历史（HEAD → 根）
+moss onto diff [A] [B]           # 语义级 Diff（标注是否 breaking）
+moss onto tag <name> [ver]       # 打版本标签
+moss onto rollback <ver>         # 回滚：还原工作区 DSL 并前移 HEAD
+moss onto conformance [--json]   # 符合性自证报告
 ```
 
-**为什么用 DSL 而非手写 `.owl`**：本体由 LLM 生成时，带空白节点的 Turtle 既易错又难 review；带 JSON Schema 的 DSL 在生成那一刻被约束，且天然可 diff、可 PR。版本化已实现（SQLite 内容寻址版本库），Branch / Merge 为下一增量。协议契约见 [`PROTOCOL.md`](src/governanceops/resources/ontology/PROTOCOL.md)。
+**为什么用 DSL 而非手写 `.owl`**：本体由 LLM 生成时，带空白节点的 Turtle 既易错又难 review；带 JSON Schema 的 DSL 在生成那一刻被约束，且天然可 diff、可 PR。版本化已实现（SQLite 内容寻址版本库），Branch / Merge 为下一增量。协议契约见 [`PROTOCOL.md`](src/moss/resources/ontology/PROTOCOL.md)。
 
 ---
 
 ## Web 驾驶舱
 
-`govops serve` 启动单页仪表盘，无需切换 Tab 即完成输入、看板、推理、告警、日志的联动：
+`moss serve` 启动单页仪表盘，无需切换 Tab 即完成输入、看板、推理、告警、日志的联动：
 
 - **状态栏** — 决策总数 / 高危 / 超期 / 已完成 + 时钟
 - **输入栏** — 自然语言输入 → IntentAgent 自动路由（`分配给王工` → AMEND、`检查` → CHECKPOINT、周报文本 → INGEST）
@@ -251,18 +253,18 @@ govops onto conformance [--json]   # 符合性自证报告
 
 | 命令 | 说明 |
 |------|------|
-| `govops init` · `demo` | 初始化工作区 / 加载演示数据 |
-| `govops ingest <file>` | 从文件提取决策（.txt/.md/.docx/.pdf），`-` 从 stdin |
-| `govops connect email` · `daemon` | 配置邮件接入（IMAP）/ 守护进程定时拉取 |
-| `govops compile` | 编译检查（决策完备性验证） |
-| `govops checkpoint` | 治理心跳（逾期 / 停滞 / 阻塞检测 + 自动升级） |
-| `govops hermit` | 展示 HermiT 本体分类结果 |
-| `govops status` · `graph` · `attention` · `brief` · `alert` | 状态 / 图 / 待办 / 简报 / 告警 |
-| `govops onto …` | Ontology Repo：validate / build / diff / tag / rollback / conformance |
-| `govops serve` | 启动 Web 驾驶舱 |
-| `govops reset` · `migrate` | 清空数据 / 从旧 JSON 迁移到 SQLite |
+| `moss init` · `demo` | 初始化工作区 / 加载演示数据 |
+| `moss ingest <file>` | 从文件提取决策（.txt/.md/.docx/.pdf），`-` 从 stdin |
+| `moss connect email` · `daemon` | 配置邮件接入（IMAP）/ 守护进程定时拉取 |
+| `moss compile` | 编译检查（决策完备性验证） |
+| `moss checkpoint` | 治理心跳（逾期 / 停滞 / 阻塞检测 + 自动升级） |
+| `moss hermit` | 展示 HermiT 本体分类结果 |
+| `moss status` · `graph` · `attention` · `brief` · `alert` | 状态 / 图 / 待办 / 简报 / 告警 |
+| `moss onto …` | Ontology Repo：validate / build / diff / tag / rollback / conformance |
+| `moss serve` | 启动 Web 驾驶舱 |
+| `moss reset` · `migrate` | 清空数据 / 从旧 JSON 迁移到 SQLite |
 
-> 完整清单以 `govops --help` 为准。
+> 完整清单以 `moss --help` 为准。
 
 ---
 
@@ -277,8 +279,8 @@ govops onto conformance [--json]   # 符合性自证报告
 ## 开发
 
 ```bash
-git clone https://github.com/georgewangchn/GovernanceOps.git
-cd GovernanceOps
+git clone https://github.com/georgewangchn/MOSS.git
+cd MOSS
 python -m venv venv && source venv/bin/activate
 pip install -e ".[agent,dev]"
 pytest
@@ -290,14 +292,14 @@ pytest
 
 ## 诚实定位
 
-> GovernanceOps 是一个功能完整、可运行、可演示的**原型**，**不是**已服务大批客户的成熟产品。它证明的是「这套方法论能用开源工具链完整落地」，而非「已被市场规模验证」。这两件事必须分清。
+> MOSS 是一个功能完整、可运行、可演示的**原型**，**不是**已服务大批客户的成熟产品。它证明的是「这套方法论能用开源工具链完整落地」，而非「已被市场规模验证」。这两件事必须分清。
 
 ---
 
 ## 相关项目
 
 - **[OntologyOps](https://github.com/georgewangchn/OntologyOps)** — 本项目所实现的方法论与协议，含方法论体系与博客系列
-- [`PROTOCOL.md`](src/governanceops/resources/ontology/PROTOCOL.md) — Ontology Repo 支柱的协议契约（GovernanceOps 为其参考实现）
+- [`PROTOCOL.md`](src/moss/resources/ontology/PROTOCOL.md) — Ontology Repo 支柱的协议契约（MOSS 为其参考实现）
 
 ---
 
@@ -307,10 +309,10 @@ pytest
 
 | 资产类型 | 许可协议 | 覆盖范围 | 说明 |
 |---------|---------|---------|------|
-| **代码** | [MIT](LICENSE) | src/governanceops/ 代码、tests、demo | 自由使用、修改、商用 |
-| **协议规范** | [CC BY 4.0](src/governanceops/resources/ontology/LICENSE) | src/governanceops/resources/ontology/ | 署名 + 允许商业实现 |
+| **代码** | [MIT](LICENSE) | src/moss/ 代码、tests、demo | 自由使用、修改、商用 |
+| **协议规范** | [CC BY 4.0](src/moss/resources/ontology/LICENSE) | src/moss/resources/ontology/ | 署名 + 允许商业实现 |
 
-> `src/governanceops/resources/ontology/` 下的协议规范权威源在 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)，以 CC BY 4.0 发布。无论从哪个仓库获取，协议许可始终为 CC BY 4.0。
+> `src/moss/resources/ontology/` 下的协议规范权威源在 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)，以 CC BY 4.0 发布。无论从哪个仓库获取，协议许可始终为 CC BY 4.0。
 
 项目名称使用指引见 [TRADEMARK.md](TRADEMARK.md)。
 

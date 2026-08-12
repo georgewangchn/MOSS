@@ -1,6 +1,6 @@
-# Contributing to GovernanceOps
+# Contributing to MOSS
 
-感谢你对 GovernanceOps 的兴趣！本文档描述开发流程和规范。
+感谢你对 MOSS 的兴趣！本文档描述开发流程和规范。
 
 ## 许可
 
@@ -9,9 +9,9 @@
 | 资产类型 | 许可协议 | 说明 |
 |---------|---------|------|
 | **代码** | [MIT](LICENSE) | 自由使用、修改、商用，无需 CLA |
-| **协议规范** | [CC BY 4.0](src/governanceops/resources/ontology/LICENSE) | 署名 + 允许商业实现 |
+| **协议规范** | [CC BY 4.0](src/moss/resources/ontology/LICENSE) | 署名 + 允许商业实现 |
 
-`src/governanceops/resources/ontology/` 下的协议规范（PROTOCOL.md、schema、conformance）的权威源在 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)，无论从哪个仓库获取，协议许可始终为 CC BY 4.0。
+`src/moss/resources/ontology/` 下的协议规范（PROTOCOL.md、schema、conformance）的权威源在 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)，无论从哪个仓库获取，协议许可始终为 CC BY 4.0。
 
 - **代码贡献**（MIT）：无需 CLA，MIT 已授权商用
 - **协议贡献**（CC BY 4.0）：提交即表示您授权您的贡献以 CC BY 4.0 许可发布，与协议规范保持一致
@@ -24,8 +24,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/georgewangchn/GovernanceOps.git
-cd GovernanceOps
+git clone https://github.com/georgewangchn/MOSS.git
+cd MOSS
 
 # 创建虚拟环境
 python -m venv venv
@@ -48,8 +48,8 @@ pip install -e ".[agent,dev]"
 ## 项目结构
 
 ```
-src/governanceops/         # 唯一代码包（src 布局）
-  config.py                # 配置管理（工作区：cwd 有 .env 则 cwd，否则 ~/.governance-ops/）
+src/moss/         # 唯一代码包（src 布局）
+  config.py                # 配置管理（工作区：cwd 有 .env 则 cwd，否则 ~/.moss/）
   storage.py               # SQLite 存储后端
   models.py                # 数据模型（Decision, Issue, Update, GovernanceGraph）
   compiler.py              # Governance Compiler — 完备性检查
@@ -77,7 +77,7 @@ demo/                      # 演示脚本 + 数据
 
 ### 1. 引擎层冻结原则
 
-`src/governanceops/` 下的核心模块（compiler, runtime, engine, owl_ontology, owl_compiler, models）是产品壁垒，**不为开源化而改动**。新增功能通过扩展点实现：
+`src/moss/` 下的核心模块（compiler, runtime, engine, owl_ontology, owl_compiler, models）是产品壁垒，**不为开源化而改动**。新增功能通过扩展点实现：
 
 - 新增数据源 → 在 `sources/` 下新增 `Source` 子类
 - 新增提取场景 → 在 `skills/` 下新增 `SKILL.md`
@@ -123,7 +123,7 @@ pytest
 pytest tests/test_ontology_repo.py
 
 # 覆盖率
-pytest --cov=governanceops
+pytest --cov=moss
 ```
 
 ### 降级模式测试
@@ -141,13 +141,13 @@ pip install -e ".[agent]"
 
 ## 添加新的数据源
 
-1. 在 `src/governanceops/sources/` 下创建新文件
+1. 在 `src/moss/sources/` 下创建新文件
 2. 继承 `BaseSource`，实现 `fetch()` 方法
 3. 返回 `list[RawDoc]`
 4. 在 CLI 中注册 `connect` 子命令
 
 ```python
-from governanceops.sources.base import BaseSource, RawDoc
+from moss.sources.base import BaseSource, RawDoc
 
 class WebhookSource(BaseSource):
     def fetch(self) -> list[RawDoc]:
@@ -159,7 +159,7 @@ class WebhookSource(BaseSource):
 
 ## 添加新的提取技能
 
-1. 在 `src/governanceops/skills/<skill-name>/` 下创建 `SKILL.md`
+1. 在 `src/moss/skills/<skill-name>/` 下创建 `SKILL.md`
 2. 包含 YAML frontmatter + System Prompt + Extraction Rules
 3. 重启后自动加载
 
@@ -172,7 +172,7 @@ tags: [contract, legal]
 
 ## System Prompt
 \```
-You are GovernanceOps Parser for contract documents...
+You are MOSS Parser for contract documents...
 \```
 
 ## Extraction Rules
@@ -196,6 +196,6 @@ You are GovernanceOps Parser for contract documents...
 
 ## 联系
 
-- Issues: https://github.com/georgewangchn/GovernanceOps/issues
-- Discussions: https://github.com/georgewangchn/GovernanceOps/discussions
+- Issues: https://github.com/georgewangchn/MOSS/issues
+- Discussions: https://github.com/georgewangchn/MOSS/discussions
 - 方法论 / 协议：[OntologyOps](https://github.com/georgewangchn/OntologyOps)

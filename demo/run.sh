@@ -1,6 +1,6 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  GovernanceOps — 演示脚本
+#  MOSS — 演示脚本
 #
 #  用法: bash demo/run.sh
 #  时长: ~10 分钟 (按回车推进每一步)
@@ -18,7 +18,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 VENV_PYTHON="$ROOT/venv/bin/python"
-OPS="$ROOT/venv/bin/govops"
+OPS="$ROOT/venv/bin/moss"
 
 pause() {
     echo ""
@@ -41,7 +41,7 @@ section "第0步: 清理环境 + 项目结构展示"
 
 rm -rf data
 echo -e "${BOLD}项目结构:${NC}"
-echo "  src/governanceops/          ← 唯一代码包"
+echo "  src/moss/          ← 唯一代码包"
 echo "    ├─ cli/                   ← CLI 模块"
 echo "    ├─ web/                   ← Web 模块 (FastAPI + SSE + SPA)"
 echo "    ├─ ontorepo/              ← Ontology Repo (DSL/版本化/符合性)"
@@ -184,7 +184,7 @@ echo "  Tab3 📊 看板 — 自动刷新"
 echo "  Tab4 🔔 通知 — SSE实时推送"
 echo "  Tab5 📋 日志 — 全事件时间线"
 echo ""
-echo -e "${YELLOW}启动: govops serve${NC}"
+echo -e "${YELLOW}启动: moss serve${NC}"
 echo "  然后打开浏览器 → http://localhost:8000"
 pause
 
@@ -193,7 +193,7 @@ section "演示完成"
 # ═══════════════════════════════════════════════════════════════
 
 echo -e "${GREEN}════════════════════════════════════════${NC}"
-echo -e "${GREEN}  GovernanceOps 演示完成${NC}"
+echo -e "${GREEN}  MOSS 演示完成${NC}"
 echo -e "${GREEN}════════════════════════════════════════${NC}"
 echo ""
 echo "核心亮点:"

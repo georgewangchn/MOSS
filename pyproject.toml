@@ -3,9 +3,9 @@ requires = ["setuptools>=75", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "governanceops"
+name = "moss-owl"
 version = "0.2.0"
-description = "GovernanceOps - 治理驱动的企业决策运行时系统 (Governance Runtime)；OntologyOps 方法论的参考实现"
+description = "MOSS - 治理驱动的企业决策运行时系统 (Governance Runtime)；OntologyOps 方法论的参考实现"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -39,11 +39,10 @@ dev = [
 ]
 
 [project.scripts]
-governanceops = "governanceops.cli.main:main"
-govops = "governanceops.cli.main:main"
+moss = "moss.cli.main:main"
 
 [project.urls]
-Repository = "https://github.com/georgewangchn/GovernanceOps"
+Repository = "https://github.com/georgewangchn/MOSS"
 Methodology = "https://github.com/georgewangchn/OntologyOps"
 
 [tool.setuptools]
@@ -53,7 +52,7 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-governanceops = [
+moss = [
     "resources/ontology/*.yaml",
     "resources/ontology/*.md",
     "resources/ontology/schema/*.json",

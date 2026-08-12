@@ -1,16 +1,16 @@
 """
-国信数科 — GovernanceOps 演示 v3
+国信数科 — MOSS 演示 v3
 改进: 所有指标用模拟时间线计算，不依赖datetime.now()
 
 用法: python demo/scenario.py [init|week1|week2|week3|week4|final|all]
 """
 import sys
 from datetime import datetime
-from governanceops.engine import GovernanceEngine
-from governanceops.storage import Storage
-from governanceops.compiler import GovernanceCompiler
-from governanceops.models import GovernanceGraph
-from governanceops.owl_ontology import reason_graph
+from moss.engine import GovernanceEngine
+from moss.storage import Storage
+from moss.compiler import GovernanceCompiler
+from moss.models import GovernanceGraph
+from moss.owl_ontology import reason_graph
 
 def d(y,m,d,h=9): return datetime(y,m,d,h)
 
@@ -41,7 +41,7 @@ def compute_stats(graph, now):
 def checkpoint_alerts(graph, now):
     """用模拟时间线计算告警"""
     alerts = []
-    from governanceops.models import Alert
+    from moss.models import Alert
     for did, dec in graph.decisions.items():
         if dec.status == "DONE": continue
         if dec.deadline and dec.deadline < now:

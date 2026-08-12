@@ -4,20 +4,20 @@
 
 | 名称 | 类型 | 用途 |
 |------|------|------|
-| **GovernanceOps** | 项目名称 | OntologyOps 方法论的参考实现 |
+| **MOSS** | 项目名称 | OntologyOps 方法论的参考实现 |
 | **OntologyOps** | 方法论名称 | 知识工程方法论与协议体系（详见 [OntologyOps 仓库](https://github.com/georgewangchn/OntologyOps)） |
 
 ## 使用规则
 
 ### 1. Fork 项目
 
-您可以 fork 本仓库代码（MIT 协议允许），但 fork 项目**必须使用不同的项目名称**，不得使用 "GovernanceOps" 或任何可能引起混淆的名称。
+您可以 fork 本仓库代码（MIT 协议允许），但 fork 项目**必须使用不同的项目名称**，不得使用 "MOSS" 或任何可能引起混淆的名称。
 
 ### 2. 引用本项目
 
-在文章、博客、演讲中引用本项目时，请使用完整名称 "GovernanceOps" 并注明出处：
+在文章、博客、演讲中引用本项目时，请使用完整名称 "MOSS" 并注明出处：
 
-> 来源：GovernanceOps 项目 (https://github.com/georgewangchn/GovernanceOps)
+> 来源：MOSS 项目 (https://github.com/georgewangchn/MOSS)
 
 ### 3. 实现协议
 
