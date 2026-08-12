@@ -1,5 +1,5 @@
 """
-国信数科 — MOSS 演示 v3
+某科技公司 — MOSS 演示 v3
 改进: 所有指标用模拟时间线计算，不依赖datetime.now()
 
 用法: python demo/scenario.py [init|week1|week2|week3|week4|final|all]
