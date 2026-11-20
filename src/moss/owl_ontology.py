@@ -88,6 +88,7 @@ class GovernanceOntology:
         # populated by _define_from_model:
         self.classes: Dict[str, Any] = {}
         self.properties: Dict[str, Any] = {}
+        self.prop_domains: Dict[str, str] = {}   # property name → DSL domain (ABox 装载按概念过滤)
         self.defined: Dict[str, Any] = {}        # class name → owlready2 class
         self.result_keys: Dict[str, str] = {}    # result_key → defined class name
 
@@ -142,6 +143,7 @@ class GovernanceOntology:
         onto = self.onto
         self.classes = {"Thing": Thing}
         self.properties = {}
+        self.prop_domains = {}
         self.defined = {}
         self.result_keys = {}
 
@@ -158,6 +160,7 @@ class GovernanceOntology:
                 prop.domain = [Thing] if p.domain == "Thing" else [self.classes[p.domain]]
                 prop.range = [_DATATYPE[p.range]]
                 self.properties[p.name] = prop
+                self.prop_domains[p.name] = p.domain
 
             # object properties
             for p in model.properties.object:
@@ -166,6 +169,7 @@ class GovernanceOntology:
                 prop.domain = [Thing] if p.domain == "Thing" else [self.classes[p.domain]]
                 prop.range = [Thing] if p.range == "Thing" else [self.classes[p.range]]
                 self.properties[p.name] = prop
+                self.prop_domains[p.name] = p.domain
 
             # defined classes (HermiT classification targets)
             for dc in model.defined_classes:
@@ -183,11 +187,25 @@ class GovernanceOntology:
         for name, cls in self.defined.items():
             setattr(self, name, cls)
 
+    def _resolve_class(self, name: str):
+        """Resolve a class name in an expression — concept or defined class.
+
+        Defined classes are legal fillers (e.g. some(dependsOn, BlockedDecision)),
+        so both maps are searched.
+        """
+        if name == "Thing":
+            return Thing
+        if name in self.classes:
+            return self.classes[name]
+        if name in self.defined:
+            return self.defined[name]
+        raise KeyError(f"unknown class referenced in expression: {name}")
+
     def _build_expr(self, e):
         """Recursively build an owlready2 class expression from a DSL Expr node."""
         t = e.type
         if t == "class":
-            return Thing if e.name == "Thing" else self.classes[e.name]
+            return self._resolve_class(e.name)
         if t == "and":
             return reduce(operator.and_, [self._build_expr(o) for o in e.operands])
         if t == "or":
@@ -200,7 +218,7 @@ class GovernanceOntology:
             if f.datatype:
                 filler = _DATATYPE[f.datatype]
             else:
-                filler = Thing if f.class_ == "Thing" else self.classes[f.class_]
+                filler = self._resolve_class(f.class_)
             return prop.some(filler)
         if t == "value":
             return prop.value(e.value)
@@ -228,29 +246,47 @@ class GovernanceOntology:
         now = datetime.now()
 
         with self.onto:
+            # Pass 1: create ALL individuals and assert data-property values,
+            # so pass 2 never hits a forward reference.
             for did, decision in graph.decisions.items():
                 ind = D(did)
                 self._individuals[did] = ind
-                self._load_decision_abox(ind, decision, graph, binding, now)
+                self._load_abox_fields(ind, decision, "Decision", graph, binding, now)
 
             for update in graph.updates:
                 ind = U(update.id)
                 self._individuals[update.id] = ind
-                ind.hasTitle = update.content[:80]
-                if update.decision_id in self._individuals:
-                    self._individuals[update.decision_id].hasUpdate.append(ind)
+                self._load_abox_fields(ind, update, "Update", graph, binding, now)
 
             for iid, issue in graph.issues.items():
                 ind = I(iid)
                 self._individuals[iid] = ind
-                ind.hasTitle = issue.title
+                self._load_abox_fields(ind, issue, "Issue", graph, binding, now)
 
-    def _load_decision_abox(self, ind, decision, graph, binding, now) -> None:
-        """Set DataProperty values on a Decision individual from abox_binding.
+            # Pass 2: wire object-property links (relation bindings).
+            for update in graph.updates:
+                if update.decision_id in self._individuals:
+                    self._individuals[update.decision_id].hasUpdate.append(
+                        self._individuals[update.id]
+                    )
+            for did, decision in graph.decisions.items():
+                ind = self._individuals[did]
+                for dep_id in decision.depends_on:
+                    target = self._individuals.get(dep_id)
+                    if target is not None:
+                        ind.dependsOn.append(target)
+
+    def _load_abox_fields(self, ind, obj, kind: str, graph, binding, now) -> None:
+        """Set DataProperty values on an individual from abox_binding.
 
         Mirrors cwa.py's accessor logic so HermiT and fallback paths share
-        one ABox mapping source.
+        one ABox mapping source. Bindings whose property domain does not
+        cover the individual's concept (or Thing) are skipped. Only truthy
+        values are asserted — cwa mirrors this with bool() so a False
+        computed boolean classifies identically on both paths.
         """
+        from moss.models import COMPUTED_BINDINGS
+
         for prop_name, b in binding.items():
             if b.relation:
                 continue
@@ -259,15 +295,25 @@ class GovernanceOntology:
             if prop is None:
                 continue
 
-            if b.computed == "compute_priority":
-                from moss.models import compute_priority
-                value = compute_priority(decision, graph, now)
-                if value is not None:
+            domain = self.prop_domains.get(prop_name, "Thing")
+            if domain not in ("Thing", kind):
+                continue
+
+            if b.computed:
+                fn = COMPUTED_BINDINGS.get(b.computed)
+                if fn is None:
+                    continue
+                value = fn(obj, graph, now)
+                if value:
                     setattr(ind, prop_name, value)
                 continue
 
             if b.field:
-                value = getattr(decision, b.field, None)
+                if kind == "Update" and prop_name == "hasTitle":
+                    # Update 无 title 字段：hasTitle 取 content 前 80 字（既有 ABox 行为）
+                    value = obj.content[:80]
+                else:
+                    value = getattr(obj, b.field, None)
                 if value is None:
                     continue
                 if b.transform == "isoformat" and hasattr(value, "isoformat"):
@@ -283,6 +329,9 @@ class GovernanceOntology:
         Result keys are derived from the DSL (each defined class' result_key),
         so adding/removing a defined class in the DSL automatically flows through
         here — no hardcoded key list. `all_decisions` is always present.
+        Individuals of every concept (Decision / Issue / Update) are
+        classified; each key's list stays homogeneous because the defined
+        class's parent fixes which concept it can match.
         """
         with self.onto:
             sync_reasoner_hermit(infer_property_values=True, debug=0)
@@ -290,13 +339,12 @@ class GovernanceOntology:
         results: Dict[str, Any] = {rk: [] for rk in self.result_keys}
         results["all_decisions"] = []
 
-        for did, ind in self._individuals.items():
-            if not isinstance(ind, self.Decision):
-                continue
-            results["all_decisions"].append(did)
+        for iid, ind in self._individuals.items():
+            if isinstance(ind, self.Decision):
+                results["all_decisions"].append(iid)
             for rk, cls_name in self.result_keys.items():
                 if isinstance(ind, self.defined[cls_name]):
-                    results[rk].append(did)
+                    results[rk].append(iid)
 
         return results
 
@@ -384,7 +432,13 @@ def _fallback_reason(graph) -> Dict[str, Any]:
     the SAME DSL defined-classes that HermiT uses (via the cwa evaluator), so this
     path can no longer drift from the TBox: change a defined class in the DSL and
     both HermiT and this fallback change together.
+
+    Each defined class is only evaluated against subjects of its parent concept
+    (mirroring OWL subsumption), so Decision classes never touch Issue/Update
+    objects and vice versa.
     """
+    from datetime import datetime as _dt
+
     from moss.ontorepo.cwa import evaluate
     from moss.ontorepo.loader import default_dsl_path, load_model
 
@@ -393,15 +447,24 @@ def _fallback_reason(graph) -> Dict[str, Any]:
         onto._model = load_model(default_dsl_path())
     model = onto._model
     binding = model.abox_binding
+    now = _dt.now()
+    defined = {dc.name: dc for dc in model.defined_classes}
 
     results: Dict[str, Any] = {dc.result_key: [] for dc in model.defined_classes if dc.result_key}
-    results["all_decisions"] = []
+    results["all_decisions"] = list(graph.decisions.keys())
 
-    for did, d in graph.decisions.items():
-        results["all_decisions"].append(did)
-        for dc in model.defined_classes:
-            if dc.result_key and evaluate(dc.equivalent_to, d, graph, binding):
-                results[dc.result_key].append(did)
+    pools = {
+        "Decision": [(did, d) for did, d in graph.decisions.items()],
+        "Issue": [(iid, i) for iid, i in graph.issues.items()],
+        "Update": [(u.id, u) for u in graph.updates],
+    }
+
+    for dc in model.defined_classes:
+        if not dc.result_key:
+            continue
+        for oid, obj in pools.get(dc.parent, []):
+            if evaluate(dc.equivalent_to, obj, graph, binding, defined=defined, now=now):
+                results[dc.result_key].append(oid)
 
     return results
 

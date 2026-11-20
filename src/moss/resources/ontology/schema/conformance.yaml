@@ -28,9 +28,9 @@ clauses:
   # ── Governance Profile（企业决策治理领域） ──
   - id: gov-core-concept
     profile: governance
-    desc: "必须定义核心概念 Decision (G1)"
+    desc: "必须定义核心概念 Decision / Issue / Update (G1)"
     check: has_concepts
-    args: {required: [Decision]}
+    args: {required: [Decision, Issue, Update]}
 
   - id: gov-governed-semantics
     profile: governance
@@ -44,8 +44,50 @@ clauses:
     check: has_value_restriction
     args: {property: hasPriority, values: [P0, P1]}
 
+  - id: gov-risk-value-class
+    profile: governance
+    desc: "高风险决策必须由 risk_level 值约束定义"
+    check: has_value_restriction
+    args: {property: hasRiskLevel, values: [HIGH]}
+
+  - id: gov-status-value-class
+    profile: governance
+    desc: "阻塞/完成状态必须由 status 值约束定义"
+    check: has_value_restriction
+    args: {property: hasStatus, values: [BLOCKED, DONE]}
+
+  - id: gov-severity-value-class
+    profile: governance
+    desc: "关键议题必须由 severity 值约束定义"
+    check: has_value_restriction
+    args: {property: hasSeverity, values: [CRITICAL]}
+
+  - id: gov-dependency-object-property
+    profile: governance
+    desc: "决策间依赖必须是 Decision→Decision 对象属性（而非字符串字段）"
+    check: has_object_property
+    args: {name: dependsOn, domain: Decision, range: Decision}
+
+  - id: gov-blocked-dependency-semantics
+    profile: governance
+    desc: "必须存在『依赖了阻塞决策』的定义类 (blocked_dependency)"
+    check: has_defined_class_equiv
+    args: {result_key: blocked_dependency, properties: [dependsOn]}
+
+  - id: gov-overdue-semantics
+    profile: governance
+    desc: "必须存在超期定义类 (overdue)，时间语义经 computed 布尔桥接"
+    check: has_defined_class_equiv
+    args: {result_key: overdue, properties: [isOverdue]}
+
+  - id: gov-stale-update-semantics
+    profile: governance
+    desc: "必须存在停滞更新定义类 (stale_update)"
+    check: has_defined_class_equiv
+    args: {result_key: stale_update, properties: [isStaleUpdate]}
+
   - id: gov-reasoner-keys
     profile: governance
-    desc: "推理必须产出治理语义 result_key (G2/G3)"
+    desc: "推理必须产出治理语义 result_key (G2/G3 及 Profile 增强)"
     check: reasoner_result_keys
-    args: {keys: [governed, has_owner, has_deadline, critical, high_priority]}
+    args: {keys: [governed, has_owner, has_deadline, critical, high_priority, high_risk, blocked, done, overdue, stale, critical_issue, stale_update, has_dependency, blocked_dependency]}

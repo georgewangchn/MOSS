@@ -12,7 +12,7 @@ protocol_version: "1.0"
 
 ontology:
   iri: "http://moss.org/ontology"
-  version: "0.2.0"            # TBox 语义版本，与仓库/发行版本解耦
+  version: "0.3.0"            # TBox 语义版本，与仓库/发行版本解耦
   label: "MOSS Ontology"
 
 # DSL datatype 名 → Python 类型（编译器用）
@@ -22,6 +22,8 @@ datatypes:
   integer: int
   boolean: bool
 
+# 概念按数据模型 (moss.models) 一一对应；Meeting/Stakeholder 等尚无持久化实体，
+# 先立概念只会产生无个体的 TBox，留待数据模型落地后再入本体。
 concepts:
   - {name: Decision, parent: Thing, comment: "治理决策"}
   - {name: Issue,    parent: Thing, comment: "议题"}
@@ -29,19 +31,24 @@ concepts:
 
 properties:
   data:
-    - {name: hasOwner,      domain: Decision, range: string, functional: true}
-    - {name: hasDepartment, domain: Decision, range: string, functional: true}
-    - {name: hasDependency, domain: Decision, range: string, functional: true}
-    - {name: hasStatus,     domain: Decision, range: string, functional: true}
-    - {name: hasRiskLevel,  domain: Decision, range: string, functional: true}
-    - {name: hasPriority,   domain: Decision, range: string, functional: true}
-    - {name: hasProgress,   domain: Decision, range: float,  functional: true}
-    - {name: hasDeadline,   domain: Decision, range: string, functional: true}
-    - {name: hasTitle,      domain: Thing,    range: string, functional: true}
-    - {name: hasSource,     domain: Decision, range: string, functional: true}
-    - {name: hasCreatedAt,  domain: Decision, range: string, functional: true}
+    - {name: hasOwner,      domain: Decision, range: string,  functional: true}
+    - {name: hasDepartment, domain: Decision, range: string,  functional: true}
+    - {name: hasDependency, domain: Decision, range: string,  functional: true}
+    - {name: hasStatus,     domain: Decision, range: string,  functional: true}
+    - {name: hasRiskLevel,  domain: Decision, range: string,  functional: true}
+    - {name: hasPriority,   domain: Decision, range: string,  functional: true}
+    - {name: hasProgress,   domain: Decision, range: float,   functional: true}
+    - {name: hasDeadline,   domain: Decision, range: string,  functional: true}
+    - {name: hasTitle,      domain: Thing,    range: string,  functional: true}
+    - {name: hasSource,     domain: Decision, range: string,  functional: true}
+    - {name: hasCreatedAt,  domain: Decision, range: string,  functional: true}
+    - {name: hasSeverity,   domain: Issue,    range: string,  functional: true}
+    - {name: isOverdue,     domain: Decision, range: boolean, functional: true}
+    - {name: isStale,       domain: Decision, range: boolean, functional: true}
+    - {name: isStaleUpdate, domain: Update,   range: boolean, functional: true}
   object:
-    - {name: hasUpdate, domain: Decision, range: Update, functional: false}
+    - {name: hasUpdate, domain: Decision, range: Update,  functional: false}
+    - {name: dependsOn, domain: Decision, range: Decision, functional: false}
 
 # 定义类 = HermiT 分类目标。result_key 绑定 reason() 输出的 key（下游契约，不可改名）。
 defined_classes:
@@ -93,6 +100,101 @@ defined_classes:
         - {type: class, name: Decision}
         - {type: value, property: hasPriority, value: "P1"}
 
+  # ── 风险/状态值约束类（枚举语义经 value 约束表达，沿用 CriticalDecision 模式） ──
+  - name: HighRiskDecision
+    parent: Decision
+    result_key: high_risk
+    comment: "risk_level = HIGH"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasRiskLevel, value: "HIGH"}
+
+  - name: BlockedDecision
+    parent: Decision
+    result_key: blocked
+    comment: "status = BLOCKED"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasStatus, value: "BLOCKED"}
+
+  - name: DoneDecision
+    parent: Decision
+    result_key: done
+    comment: "status = DONE"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasStatus, value: "DONE"}
+
+  # ── 时间相对语义：OWL 无法比较字面量时间，经 computed 布尔绑定桥接
+  #    （与 compute_priority 同一受 sanctioned 模式：值由 loader 计算，非 LLM 判定） ──
+  - name: OverdueDecision
+    parent: Decision
+    result_key: overdue
+    comment: "deadline < now 且未完成 (isOverdue computed)"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: some, property: isOverdue, filler: {datatype: boolean}}
+
+  - name: StaleDecision
+    parent: Decision
+    result_key: stale
+    comment: "距最近更新 ≥ 7 天 (isStale computed)"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: some, property: isStale, filler: {datatype: boolean}}
+
+  # ── Issue / Update 级定义类 ──
+  - name: CriticalIssue
+    parent: Issue
+    result_key: critical_issue
+    comment: "severity = CRITICAL"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Issue}
+        - {type: value, property: hasSeverity, value: "CRITICAL"}
+
+  - name: StaleUpdate
+    parent: Update
+    result_key: stale_update
+    comment: "报告时间距今 ≥ 7 天 (isStaleUpdate computed)"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Update}
+        - {type: some, property: isStaleUpdate, filler: {datatype: boolean}}
+
+  # ── 依赖语义：dependsOn 对象属性（v1 非传递；传递性留待 characteristics 语法增量） ──
+  - name: HasDependencyDecision
+    parent: Decision
+    result_key: has_dependency
+    comment: "至少依赖一个其他决策"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: some, property: dependsOn, filler: {class: Decision}}
+
+  - name: BlockedDependencyDecision
+    parent: Decision
+    result_key: blocked_dependency
+    comment: "直接依赖的决策处于 BLOCKED 状态"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: some, property: dependsOn, filler: {class: BlockedDecision}}
+
 # 闭世界绑定：每个 property 在 Python 对象侧如何取值。
 # 供 (a) load_graph 装载 ABox、(b) 无 Java 时的 fallback 解释器 共用同一份定义，
 # 从而消除"HermiT 定义类"与"手写 fallback"两份事实源的漂移 (Phase C 生效)。
@@ -106,9 +208,14 @@ abox_binding:
   hasProgress:   {field: progress}
   hasSource:     {field: source}
   hasCreatedAt:  {field: created_at,  transform: isoformat}
-  hasTitle:      {field: title}
-  hasPriority:   {computed: compute_priority}      # 需 graph 上下文
+  hasTitle:      {field: title}                  # Issue.title / Update.content 前 80 字，由 loader 截断
+  hasPriority:   {computed: compute_priority}    # 需 graph 上下文
   hasUpdate:     {relation: updates_of_decision}
+  hasSeverity:   {field: severity}               # Issue
+  isOverdue:     {computed: decision_is_overdue} # 需 now 上下文
+  isStale:       {computed: decision_is_stale}
+  isStaleUpdate: {computed: update_is_stale}
+  dependsOn:     {relation: depends_on}          # Decision.depends_on ID 列表 → 目标个体
 
 # 预留段：闭世界过程式规则 (compute_priority / MISSING_*/STALE) 未来外置于此。
 # 本增量不实现，仅占位保持 schema 前向兼容。

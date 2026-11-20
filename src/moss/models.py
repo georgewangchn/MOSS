@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -39,6 +39,7 @@ class Decision(BaseModel):
     owner: Optional[str] = None
     department: Optional[str] = None
     dependency: Optional[str] = None
+    depends_on: List[str] = Field(default_factory=list)  # 依赖的决策 ID（区别于 dependency 协作部门）
     created_at: datetime = Field(default_factory=datetime.now)
     deadline: Optional[datetime] = None
     status: DecisionStatus = "OPEN"
@@ -190,3 +191,45 @@ def compute_priority(
         return "P3"
 
     return "P4"
+
+
+# 停滞阈值（天）——与 owl_compiler 的 STALE 告警语义保持一致
+STALE_DAYS = 7
+
+
+def decision_is_overdue(decision: "Decision", graph=None, now: datetime | None = None) -> bool:
+    """截止日期已过且未完成（镜像 OwlRuntime.checkpoint 的 OVERDUE 语义）。"""
+    if now is None:
+        now = datetime.now()
+    return bool(
+        decision.deadline
+        and decision.deadline < now
+        and decision.status != "DONE"
+    )
+
+
+def decision_is_stale(decision: "Decision", graph=None, now: datetime | None = None) -> bool:
+    """距最近一次进展更新已停滞 ≥ STALE_DAYS 天且未完成。"""
+    if now is None:
+        now = datetime.now()
+    if decision.status == "DONE" or not decision.last_update_at:
+        return False
+    return (now - decision.last_update_at).days >= STALE_DAYS
+
+
+def update_is_stale(update: "Update", graph=None, now: datetime | None = None) -> bool:
+    """单条进展更新距报告时间已达到或超过 STALE_DAYS 天。"""
+    if now is None:
+        now = datetime.now()
+    return (now - update.created_at).days >= STALE_DAYS
+
+
+# abox_binding `computed:` 名称 → 取值函数 的唯一注册点。
+# owl_ontology（HermiT ABox 断言）与 cwa（fallback 求值）共用此表，
+# 消除两条推理路径对 computed 绑定的字符串特判。
+COMPUTED_BINDINGS: Dict[str, Callable[..., Any]] = {
+    "compute_priority": compute_priority,
+    "decision_is_overdue": decision_is_overdue,
+    "decision_is_stale": decision_is_stale,
+    "update_is_stale": update_is_stale,
+}

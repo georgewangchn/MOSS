@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS decisions (
     owner TEXT,
     department TEXT,
     dependency TEXT,
+    depends_on TEXT DEFAULT '[]',
     created_at TEXT,
     deadline TEXT,
     status TEXT DEFAULT 'OPEN',
@@ -101,7 +102,19 @@ class Storage:
     def _init_db(self):
         with self._connect() as conn:
             conn.executescript(_SCHEMA)
+            self._migrate(conn)
             conn.commit()
+
+    @staticmethod
+    def _migrate(conn: sqlite3.Connection) -> None:
+        """Bring pre-existing databases up to the current schema.
+
+        CREATE TABLE IF NOT EXISTS won't add columns to an old table,
+        so additive columns are backfilled here (idempotent).
+        """
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(decisions)")}
+        if "depends_on" not in cols:
+            conn.execute("ALTER TABLE decisions ADD COLUMN depends_on TEXT DEFAULT '[]'")
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self.db_path), timeout=30.0)
@@ -122,11 +135,12 @@ class Storage:
                 conn.execute(
                     """INSERT INTO decisions
                     (id, title, source, issue_id, owner, department, dependency,
-                     created_at, deadline, status, progress, risk_level,
+                     depends_on, created_at, deadline, status, progress, risk_level,
                      last_update_at, raw_statement)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (did, d.title, d.source, d.issue_id, d.owner, d.department,
                      d.dependency,
+                     json.dumps(d.depends_on),
                      d.created_at.isoformat() if d.created_at else None,
                      d.deadline.isoformat() if d.deadline else None,
                      d.status, d.progress, d.risk_level,
@@ -191,6 +205,7 @@ class Storage:
                         owner=row["owner"],
                         department=row["department"],
                         dependency=row["dependency"],
+                        depends_on=_parse_json_list(row["depends_on"]),
                         created_at=_parse_dt(row["created_at"]),
                         deadline=_parse_dt(row["deadline"]),
                         status=row["status"] or "OPEN",
@@ -288,3 +303,14 @@ def _parse_dt(val: str | None) -> datetime | None:
         return datetime.fromisoformat(val)
     except (ValueError, TypeError):
         return None
+
+
+def _parse_json_list(val: str | None) -> list:
+    """Parse JSON-encoded string list (e.g. depends_on), return [] if empty/invalid."""
+    if not val:
+        return []
+    try:
+        parsed = json.loads(val)
+        return parsed if isinstance(parsed, list) else []
+    except (ValueError, TypeError):
+        return []

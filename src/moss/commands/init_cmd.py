@@ -58,6 +58,7 @@ _DEMO_SEED = {
             "source": "demo",
             "owner": None,
             "department": "采购部",
+            "depends_on": ["demo-004"],
             "status": "OPEN",
             "progress": 0.0,
             "risk_level": "LOW",
@@ -71,10 +72,12 @@ _DEMO_SEED = {
             "owner": "李部长",
             "department": "财务部",
             "dependency": "技术部",
+            "depends_on": ["demo-001"],
             "status": "OPEN",
             "progress": 10.0,
             "risk_level": "MEDIUM",
             "deadline": "2026-03-31T18:00:00",
+            "last_update_at": "2026-10-01T09:00:00",
             "raw_statement": "3月底前完成Q1审计，张部长负责",
         },
         {
@@ -97,6 +100,12 @@ _DEMO_SEED = {
             "description": "当前供应商合同将于8月到期，需提前完成切换",
             "severity": "HIGH",
         },
+        {
+            "id": "I-002",
+            "title": "数据平台迁移合规风险",
+            "description": "迁移过程涉及敏感数据跨区流转，存在合规审查不通过风险",
+            "severity": "CRITICAL",
+        },
     ],
     "updates": [
         {
@@ -112,6 +121,7 @@ _DEMO_SEED = {
             "content": "审计材料收集启动，待技术部提供数据权限",
             "progress": 10.0,
             "source": "demo",
+            "created_at": "2026-10-01T09:00:00",
         },
     ],
     "assignments": [
@@ -120,7 +130,7 @@ _DEMO_SEED = {
         {"decision_id": "demo-004", "owner": "王总", "department": "人力资源部"},
     ],
     "edges": {
-        "issue_to_decision": {"I-001": ["demo-002"]},
+        "issue_to_decision": {"I-001": ["demo-002"], "I-002": ["demo-001"]},
         "decision_to_updates": {"demo-001": ["U-001"], "demo-003": ["U-002"]},
         "decision_to_assignment": {},
     },
@@ -204,22 +214,27 @@ def load_demo_seed():
     storage = Storage()
     graph = GovernanceGraph()
 
+    from datetime import datetime
+
+    def _dt(val):
+        if not val:
+            return None
+        try:
+            return datetime.fromisoformat(val)
+        except (ValueError, TypeError):
+            return None
+
     for d in _DEMO_SEED["decisions"]:
-        from datetime import datetime
-        deadline = None
-        if d.get("deadline"):
-            try:
-                deadline = datetime.fromisoformat(d["deadline"])
-            except (ValueError, TypeError):
-                pass
         graph.decisions[d["id"]] = Decision(
             id=d["id"], title=d["title"], source=d["source"],
             owner=d.get("owner"), department=d.get("department"),
             dependency=d.get("dependency"),
+            depends_on=d.get("depends_on", []),
             status=d.get("status", "OPEN"),
             progress=d.get("progress", 0.0),
             risk_level=d.get("risk_level", "LOW"),
-            deadline=deadline,
+            deadline=_dt(d.get("deadline")),
+            last_update_at=_dt(d.get("last_update_at")),
             raw_statement=d.get("raw_statement", ""),
         )
 
@@ -235,6 +250,7 @@ def load_demo_seed():
             id=u["id"], decision_id=u["decision_id"],
             content=u["content"], progress=u.get("progress"),
             source=u.get("source", "demo"),
+            created_at=_dt(u.get("created_at")),
         ))
 
     for a in _DEMO_SEED["assignments"]:

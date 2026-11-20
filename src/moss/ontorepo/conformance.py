@@ -123,6 +123,23 @@ def _has_value_restriction(model, raw, args):
     return (not missing), (f"{prop} 缺值约束 {sorted(missing)}" if missing else f"{prop} 含值约束 {sorted(values)}")
 
 
+@register("has_object_property")
+def _has_object_property(model, raw, args):
+    name = args.get("name")
+    domain = args.get("domain")
+    rng = args.get("range")
+    for p in model.properties.object:
+        if p.name != name:
+            continue
+        problems = []
+        if domain and p.domain != domain:
+            problems.append(f"domain={p.domain}")
+        if rng and p.range != rng:
+            problems.append(f"range={p.range}")
+        return (not problems), (f"{name} 不匹配: {' '.join(problems)}" if problems else f"{name}: {p.domain}→{p.range}")
+    return False, f"缺少对象属性 {name}"
+
+
 @register("reasoner_result_keys")
 def _reasoner_result_keys(model, raw, args):
     required = set(args.get("keys", []))

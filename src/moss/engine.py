@@ -50,6 +50,7 @@ class GovernanceEngine:
         owner: str | None = None,
         department: str | None = None,
         dependency: str | None = None,
+        depends_on: List[str] | None = None,
         deadline: datetime | None = None,
     ) -> Decision:
         did = self.graph.get_next_decision_id()
@@ -61,6 +62,7 @@ class GovernanceEngine:
             owner=owner,
             department=department,
             dependency=dependency,
+            depends_on=depends_on or [],
             deadline=deadline,
         )
         self.graph.decisions[did] = decision
@@ -91,7 +93,7 @@ class GovernanceEngine:
         if decision is None:
             raise ValueError(f"Decision {decision_id} not found")
         allowed_fields = {
-            "title", "owner", "department", "dependency", "deadline",
+            "title", "owner", "department", "dependency", "depends_on", "deadline",
             "status", "progress", "risk_level", "issue_id",
         }
         for key, value in kwargs.items():
