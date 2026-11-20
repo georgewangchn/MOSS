@@ -13,6 +13,8 @@
 </div>
 
 > **改名公告**：本项目由 `GovernanceOps` 更名为 `MOSS`。仓库迁移至 [`github.com/georgewangchn/MOSS`](https://github.com/georgewangchn/MOSS)，包名 `governanceops` → `moss`，CLI `govops` → `moss`，workspace `~/.governance-ops/` → `~/.moss/`，env `GOVOPS_*` → `MOSS_*`。历史提交完整保留。
+>
+> 注：`LLM_API_URL` / `LLM_API_KEY` / `LLM_MODEL` / `APP_HOST` / `APP_PORT` 等配置项从未带过 `GOVOPS_` 前缀（通用名，非旧品牌残留），故保持原名，详见 [`.env.example`](.env.example)。
 
 ---
 
@@ -71,7 +73,7 @@ python demo/scenario.py all   # 非交互：init → week1→4 → final 一键�
 | 第 1 周 | 看似正常，但 3 个决策无负责人、1 个已超期 | `checkpoint` 心跳检测 |
 | 第 2 周 | 超期翻 3 倍、6 个停滞 | HermiT 分类 + `compile` 校验 |
 | 第 3 周 | 关键人员请假 → 超期 14 天 → **自动升级通知上级** | 人治断裂处系统自动补位 |
-| 第 4 周 | 月底复盘：量化「有 Ops vs 无 Ops」对比 | 规则驱动优先级 + 自动升级 |
+| 第 4 周 | 月底复盘：量化「有 MOSS vs 无 MOSS」对比 | 规则驱动优先级 + 自动升级 |
 
 > 剧本在 [`demo/`](demo/) 中，用模拟时间线计算指标，**不依赖真实日期**，随时可复现。
 

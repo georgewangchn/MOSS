@@ -223,7 +223,7 @@ def run_final():
     forgotten = sum(1 for dec in graph.decisions.values()
                     if dec.status!="DONE" and dec.last_update_at and (now-dec.last_update_at).days>=25)
 
-    # 推估无Ops对照
+    # 推估无MOSS对照
     no_ops_lost = stats['no_owner'] + stats['no_deadline'] + stale_14d
     no_ops_done = max(0, stats['done'] - 3)
 
@@ -231,7 +231,7 @@ def run_final():
   从GovernanceGraph实时计算的指标 (模拟日期: {now.strftime('%-m/%-d')}):
 
   ┌────────────────────┬──────────┬──────────┬─────────┐
-  │ 指标               │ 数值     │ 无Ops推估│ 说明    │
+  │ 指标               │ 数值     │ 无MOSS推估│ 说明    │
   ├────────────────────┼──────────┼──────────┼─────────┤
   │ 总决策             │ {stats['total']:>8} │ —        │         │
   │ 已完成             │ {stats['done']:>8} │ {no_ops_done:>8} │ -{stats['done']-no_ops_done}个   │
@@ -244,7 +244,7 @@ def run_final():
   │ HermiT:Governed    │ {len(classified['governed']):>8} │ —        │         │
   └────────────────────┴──────────┴──────────┴─────────┘
 
-  Ops拦截的关键节点:
+  MOSS拦截的关键节点:
     6/5  D005 deadline到期 → checkpoint自动告警 → 升级通知张总
     6/10 D004 deadline到期 → 无进展标记 → 自动升级HIGH风险
     6/12 D010 deadline到期 → 停滞检测 → 审计整改被标记
@@ -254,7 +254,7 @@ def run_final():
     7/1  {stats['no_owner']}个无负责人 → compile ERROR → 责令限期指定
 
   💡 LLM在线时可展示:
-     ops ingest --file demo/data/weekly_report_week2.md
+     moss ingest --file demo/data/dafengchang_supplement.txt
      → Agent提取 → HermiT验证 → refine修正
 """)
 

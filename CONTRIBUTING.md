@@ -40,8 +40,9 @@ pip install -e ".[agent,dev]"
 | Extras | 说明 | 安装命令 |
 |--------|------|----------|
 | `[agent]` | LangGraph Agent 提取（并行分块 + refine 回环） | `pip install -e ".[agent]"` |
-| `[dev]` | 开发工具（pytest, ruff, mypy） | `pip install -e ".[dev]"` |
-| `[java]` | HermiT 完整推理（需系统 Java 11+） | 安装 JDK 后自动检测 |
+| `[dev]` | 测试工具（pytest, pytest-cov） | `pip install -e ".[dev]"` |
+
+HermiT 完整推理需要系统 Java 11+（pip 不安装 JDK，运行时自动检测；无 Java 自动降级为纯 Python 推理）。
 
 ---
 
@@ -131,9 +132,9 @@ pytest --cov=moss
 确保在无 langchain、无 Java 环境下测试通过：
 
 ```bash
-# 模拟无 langchain
+# 模拟无 langchain（跑全量测试，验证降级路径）
 pip uninstall langchain langgraph -y
-pytest tests/test_extractor.py
+pytest
 pip install -e ".[agent]"
 ```
 
@@ -187,7 +188,7 @@ You are MOSS Parser for contract documents...
 
 ## 发布流程
 
-1. 更新 `pyproject.toml` 版本号
+1. 更新 `src/moss/__init__.py` 的 `__version__`（`pyproject.toml` 动态读取，无需另改）
 2. 更新 CHANGELOG
 3. 创建 git tag `vX.Y.Z`
 4. `python -m build && twine upload dist/*`

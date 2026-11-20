@@ -149,8 +149,16 @@ data/*.json
 # CloudStudio IDE
 .cloudstudio
 
-# Ontology Repo build artifacts (regenerated via govops onto build; written to workspace)
+# Ontology Repo build artifacts (regenerated via moss onto build; written to workspace)
 data/ontology-build/
 
-# govops runtime session data
+# moss runtime session data
 .omo/
+bisai/
+
+# ZCode agent session state
+.zcode/
+
+# local tool state
+.slidep/
+.playwright-mcp/

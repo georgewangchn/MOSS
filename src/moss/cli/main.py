@@ -10,6 +10,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from moss import __version__
 from moss.compiler import GovernanceCompiler
 from moss.engine import GovernanceEngine
 from moss.extractor import Extractor
@@ -51,7 +52,7 @@ def risk_style(risk: str) -> str:
 
 
 @click.group()
-@click.version_option(version="0.2.0", prog_name="MOSS")
+@click.version_option(version=__version__, prog_name="MOSS")
 def main():
     """MOSS - 治理驱动的企业决策运行时系统
 
@@ -282,7 +283,7 @@ def runtime():
     console.print(Panel.fit(
         "[bold blue]MOSS Runtime[/bold blue]\n\n"
         "治理驱动的企业决策运行时系统已启动。\n"
-        "所有CLI命令可用。输入 ops --help 查看完整命令列表。",
+        "所有CLI命令可用。输入 moss --help 查看完整命令列表。",
         title="Runtime Started"
     ))
     console.print()
@@ -304,10 +305,10 @@ def ingest(text: str, file_path: Optional[str], agent: Optional[bool], skill_nam
 
     \b
     Examples:
-      ops ingest "尽快推进XX项目，张部长负责"
-      ops ingest --file meeting_minutes.txt
-      ops ingest --file weekly.md --agent
-      ops ingest --file meeting.txt --skill meeting-minutes
+      moss ingest "尽快推进XX项目，张部长负责"
+      moss ingest --file meeting_minutes.txt
+      moss ingest --file weekly.md --agent
+      moss ingest --file meeting.txt --skill meeting-minutes
 
     Skills customize extraction for different document SCENE types:
       meeting-minutes - 会议纪要（议题→决议→行动项）
@@ -332,7 +333,7 @@ def ingest(text: str, file_path: Optional[str], agent: Optional[bool], skill_nam
         candidate = Path(text)
         if candidate.exists() and candidate.is_file():
             console.print(f"[yellow]⚠ Did you mean --file? '{text}' looks like a file path.[/yellow]")
-            console.print(f"[dim]Try: ops ingest --file {text}[/dim]")
+            console.print(f"[dim]Try: moss ingest --file {text}[/dim]")
 
     use_agent = agent if agent is not None else len(content) > 2000
 
@@ -758,8 +759,8 @@ def update(decision_id: str, content: str, progress: Optional[float], risk: Opti
 
     \b
     Examples:
-      ops update 262301 "已成立专项工作组，启动方案调研"
-      ops update 262301 "完成第一阶段" --progress 50
+      moss update 262301 "已成立专项工作组，启动方案调研"
+      moss update 262301 "完成第一阶段" --progress 50
     """
     engine = get_engine()
     try:
@@ -1147,26 +1148,24 @@ def attention():
 
 @main.command()
 def hermit():
-    """Show HermiT ontology classification for all decisions."""
+    """Show OWL classification for all governed objects (per moss.onto.yaml)."""
     engine = get_engine()
     from moss.owl_ontology import reason_graph
 
     classified = reason_graph(engine.graph)
 
-    console.print("[bold]HermiT Ontology Classification[/bold]\n")
-    console.print(f"GovernedDecision (hasOwner ∧ hasDeadline ∧ hasUpdate): {classified['governed']}")
-    console.print(f"HasOwnerDecision  (∃hasOwner):                          {classified['has_owner']}")
-    console.print(f"HasDeadlineDecision (∃hasDeadline):                     {classified['has_deadline']}")
+    console.print("[bold]OWL Ontology Classification[/bold]\n")
+    # result_key 集合随 DSL 定义类自动增减，此处遍历而非硬编码键名
+    for rk in sorted(k for k in classified if k != "all_decisions"):
+        ids = classified[rk]
+        console.print(f"{rk:<20}{ids}", highlight=False)
 
     console.print("\n[bold]Per-Decision Breakdown:[/bold]")
     for did, d in engine.graph.decisions.items():
-        flags = []
-        if did in classified["governed"]: flags.append("[green]Governed[/green]")
-        if did in classified["has_owner"]: flags.append("hasOwner")
-        if did in classified["has_deadline"]: flags.append("hasDeadline")
+        flags = [rk for rk in sorted(classified) if rk != "all_decisions" and did in classified[rk]]
         icon = {"OPEN":"○","BLOCKED":"⊘","RUNNING":"◉","DONE":"✓"}.get(d.status,"?")
         flag_str = " | ".join(flags) if flags else "[dim]no classification[/dim]"
-        console.print(f"  {icon} {did} {d.title[:30]:<32} {flag_str}")
+        console.print(f"  {icon} {did} {d.title[:30]:<32} {flag_str}", highlight=False)
 
     console.print("\n[dim]Classification by owlready2 + HermiT Tableau reasoner (JVM)[/dim]")
 
@@ -1213,7 +1212,7 @@ def skills_list():
 
     console.print(table)
     console.print(f"\n[dim]Active: {', '.join(active)}[/dim]")
-    console.print("[dim]Use 'ops skills load <name>' to activate, 'ops skills remove <name>' to deactivate[/dim]")
+    console.print("[dim]Use 'moss skills load <name>' to activate, 'moss skills remove <name>' to deactivate[/dim]")
 
 
 @skills.command(name="load")
@@ -1605,7 +1604,7 @@ def _print_decision_detail(decision_id: str, decision_title: str, graph):
     sep = "═" * width
     
     console.print(f"\n{sep}")
-    console.print("          ops compile")
+    console.print("          moss compile")
     console.print(sep)
     console.print(f"\n{decision_id}  {decision_title}")
     console.print(f"  [bold green]OK[/bold green]      所有治理检查通过 [dim]HermiT: GovernedDecision[/dim]")

@@ -18,7 +18,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 VENV_PYTHON="$ROOT/venv/bin/python"
-OPS="$ROOT/venv/bin/moss"
+MOSS="$ROOT/venv/bin/moss"
 
 pause() {
     echo ""
@@ -50,7 +50,7 @@ echo "    └─ resources/ontology/    ← 本体 DSL + schema + PROTOCOL (随�
 echo "  demo/  tests/               ← 演示 / 测试"
 echo ""
 echo -e "${BOLD}可用命令:${NC}"
-$OPS --help 2>&1 | grep "  " | head -10
+$MOSS --help 2>&1 | grep "  " | head -10
 echo "  ..."
 pause
 
@@ -75,13 +75,13 @@ echo ""
 $VENV_PYTHON demo/scenario.py week1
 pause
 
-echo -e "${RED}Ops 发现了什么?${NC}"
+echo -e "${RED}MOSS 发现了什么?${NC}"
 echo "  ❌ 3个决策无负责人 (260603 数据中台/260607 培训/260612 协作流程)"
 echo "  🔴 260605 供应商合同已超期 (deadline 6/5)"
 echo ""
-echo -e "${YELLOW}执行: ops attention${NC}"
+echo -e "${YELLOW}执行: moss attention${NC}"
 echo ""
-$OPS attention 2>&1 | head -25
+$MOSS attention 2>&1 | head -25
 pause
 
 # ═══════════════════════════════════════════════════════════════
@@ -91,9 +91,9 @@ section "第3步: HermiT 本体推理"
 echo "HermiT 是 OWL2 DL Tableau 推理机。"
 echo "它会自动将决策分类到 OWL defined classes 中。"
 echo ""
-echo -e "${YELLOW}执行: ops hermit${NC}"
+echo -e "${YELLOW}执行: moss hermit${NC}"
 echo ""
-$OPS hermit 2>&1
+$MOSS hermit 2>&1
 pause
 
 # ═══════════════════════════════════════════════════════════════
@@ -105,14 +105,14 @@ echo ""
 $VENV_PYTHON demo/scenario.py week2 2>&1 | tail -8
 pause
 
-echo -e "${RED}Ops 发现了什么?${NC}"
+echo -e "${RED}MOSS 发现了什么?${NC}"
 echo "  🔴 超期翻3倍: 260604等保(超4天) 260605合同(超9天) 260610审计(超2天)"
 echo "  ⏸ 6个决策停滞>7天"
 echo "  ❌ 260603/260607/260612 仍然无负责人"
 echo ""
-echo -e "${YELLOW}执行: ops compile${NC}"
+echo -e "${YELLOW}执行: moss compile${NC}"
 echo ""
-$OPS compile 2>&1 | head -20
+$MOSS compile 2>&1 | head -20
 pause
 
 # ═══════════════════════════════════════════════════════════════
@@ -152,9 +152,9 @@ section "第7步: 周会简报"
 
 echo "一键生成周会简报，看板式呈现。"
 echo ""
-echo -e "${YELLOW}执行: ops brief${NC}"
+echo -e "${YELLOW}执行: moss brief${NC}"
 echo ""
-$OPS brief 2>&1
+$MOSS brief 2>&1
 pause
 
 # ═══════════════════════════════════════════════════════════════
@@ -168,9 +168,9 @@ echo "  P2 = hasOwner + hasDeadline"
 echo "  P3 = hasOwner"
 echo "  P4 = 无owner"
 echo ""
-echo -e "${YELLOW}执行: ops attention${NC}"
+echo -e "${YELLOW}执行: moss attention${NC}"
 echo ""
-$OPS attention 2>&1 | head -25
+$MOSS attention 2>&1 | head -25
 pause
 
 # ═══════════════════════════════════════════════════════════════

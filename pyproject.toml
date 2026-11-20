@@ -3,8 +3,8 @@ requires = ["setuptools>=75", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "moss-owl"
-version = "0.2.0"
+name = "moss"
+dynamic = ["version"]
 description = "MOSS - 治理驱动的企业决策运行时系统 (Governance Runtime)；OntologyOps 方法论的参考实现"
 readme = "README.md"
 license = {text = "MIT"}
@@ -47,6 +47,9 @@ Methodology = "https://github.com/georgewangchn/OntologyOps"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.setuptools.dynamic]
+version = {attr = "moss.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

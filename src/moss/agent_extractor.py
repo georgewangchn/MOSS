@@ -103,7 +103,7 @@ EXTRACTION vs VALIDATION — CRITICAL SEPARATION:
   The ontology contract below defines the TARGET state for FULLY-GOVERNED decisions.
   Your job is EXTRACTION ONLY: capture EVERYTHING the text says.
   Missing owners/deadlines ARE EXPECTED — the system will flag gaps (ERROR/WARNING)
-  and the user will resolve them via follow-up "ops ingest" commands.
+  and the user will resolve them via follow-up "moss ingest" commands.
   DO NOT skip items just because they lack owners or deadlines.
   If the text says "推进XX" → EXTRACT IT as a decision, even if no owner is named.
 
