@@ -55,7 +55,7 @@ The CLI surface is wider than the list above — run `moss --help` before assumi
 
 There is **no lint, typecheck, or formatter config** in this repo (no ruff/mypy config files; pyproject `[dev]` only pulls pytest + pytest-cov). CONTRIBUTING.md mentions ruff/mypy aspirationally — they are not wired up. Do not claim a lint/typecheck gate exists.
 
-There is **no CI** (`.github/workflows/` absent). Verification = running `pytest` locally.
+CI: `.github/workflows/ci.yml` — matrix (Python 3.10/3.12 × java installed/none × langchain installed/none, 6 jobs) + DSL static-check job. The `java=installed` jobs are the only place `test_hermit_matches_fallback` actually runs; `java=none` jobs guard the degradation matrix. Local verification remains `pytest`.
 
 ## Project layout
 

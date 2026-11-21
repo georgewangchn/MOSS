@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: py${{ matrix.python }} · ${{ matrix.java == 'installed' && 'HermiT' || 'fallback' }} · ${{ matrix.langchain == 'installed' && 'agent' || 'no-langchain' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 全矩阵 = 降级矩阵：无 Java / 无 langchain 组合必须照常通过（本仓库铁律）
+        python: ["3.10", "3.12"]
+        java: [installed, none]
+        langchain: [installed, none]
+        exclude:
+          # 2×2×2=8 → 6 个作业：旧 Python 上省两个降级组合（全矩阵保留在 3.12）
+          - python: "3.10"
+            java: none
+            langchain: none
+          - python: "3.10"
+            java: installed
+            langchain: none
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - uses: actions/setup-java@v4
+        if: matrix.java == 'installed'
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install
+        # java=none 组合不装 agent extras —— 模拟"无 langchain + 无 Java"的裸降级环境
+        run: |
+          if [ "${{ matrix.java }}" = "none" ]; then
+            pip install -e . pytest pytest-cov
+          else
+            pip install -e ".[agent,dev]"
+          fi
+
+      - name: Strip langchain (degradation drill)
+        if: matrix.java == 'installed' && matrix.langchain == 'none'
+        run: pip uninstall -y langchain langgraph langchain-openai
+
+      - name: Assert HermiT actually engaged (guards silent skips)
+        if: matrix.java == 'installed'
+        run: |
+          python - <<'PY'
+          import shutil
+          import moss.owl_ontology as oo
+          assert shutil.which("java"), "matrix claims java=installed but no java on PATH"
+          assert oo._check_java(), "java present but owlready2 java check failed"
+          stats = oo.reasoner_stats()
+          assert stats["java_available"], stats
+          print("HermiT will engage; equivalence sentinel is NOT skipped")
+          PY
+
+      - name: Test
+        run: pytest --cov=moss --cov-report=term
+
+      - name: Ontology conformance (must be all-green)
+        run: |
+          python -m moss.cli.main onto conformance || moss onto conformance
+
+  lint-yaml:
+    name: ontology DSL static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install (minimal)
+        run: pip install -e .
+      - name: DSL validates + org vocabulary guard
+        run: |
+          python - <<'PY'
+          from moss.ontorepo.loader import load_model, default_dsl_path
+          m = load_model(default_dsl_path())
+          assert m.org and len(m.org.universal_positions) >= 5
+          # 别名撞名守卫（与 test_org_vocabulary_layered 同源，CI 静态层再跑一次）
+          def scope(positions):
+              seen = {}
+              for p in positions:
+                  for n in (p.id, p.label, *p.aliases):
+                      k = n.strip().lower()
+                      assert seen.get(k, p.id) == p.id, f"alias clash: {n}"
+                      seen[k] = p.id
+          scope(m.org.universal_positions)
+          for a in m.org.archetypes:
+              scope(a.positions)
+          print(f"DSL OK: {len(m.defined_classes)} defined classes, {len(m.org.archetypes)} archetypes")
+          PY

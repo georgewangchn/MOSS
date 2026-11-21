@@ -6,7 +6,7 @@
 
 <sub>OWL 2 DL + HermiT 决策治理运行时 · 行业原型 × 岗位职责组织本体 · [OntologyOps](https://github.com/georgewangchn/OntologyOps) 方法论参考实现</sub>
 
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/) [![Code: MIT](https://img.shields.io/badge/Code-MIT-22c55e?style=flat-square)](LICENSE) [![Protocol: CC BY 4.0](https://img.shields.io/badge/Protocol-CC_BY_4.0-3b82f6?style=flat-square)](src/moss/resources/ontology/LICENSE) [![Reasoner](https://img.shields.io/badge/Reasoner-OWL_2_DL_·_HermiT-8A2BE2?style=flat-square)](src/moss/resources/ontology/PROTOCOL.md) [![Methodology](https://img.shields.io/badge/Methodology-OntologyOps-6366f1?style=flat-square)](https://github.com/georgewangchn/OntologyOps) [![Status: Prototype](https://img.shields.io/badge/Status-Prototype-orange?style=flat-square)](#-诚实定位) [![Tests](https://img.shields.io/badge/tests-46%20passing-22c55e?style=flat-square)](tests/)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/) [![Code: MIT](https://img.shields.io/badge/Code-MIT-22c55e?style=flat-square)](LICENSE) [![Protocol: CC BY 4.0](https://img.shields.io/badge/Protocol-CC_BY_4.0-3b82f6?style=flat-square)](src/moss/resources/ontology/LICENSE) [![Reasoner](https://img.shields.io/badge/Reasoner-OWL_2_DL_·_HermiT-8A2BE2?style=flat-square)](src/moss/resources/ontology/PROTOCOL.md) [![Methodology](https://img.shields.io/badge/Methodology-OntologyOps-6366f1?style=flat-square)](https://github.com/georgewangchn/OntologyOps) [![Status: Prototype](https://img.shields.io/badge/Status-Prototype-orange?style=flat-square)](#-诚实定位) [![CI](https://github.com/georgewangchn/MOSS/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/georgewangchn/MOSS/actions/workflows/ci.yml)
 
 **本体即代码** · **LLM 只做提取** · **推理机做裁判** · **零侵入接入**
 
@@ -242,6 +242,7 @@ moss org list / show <id>        # 组织词汇表：原型列表 / 岗位职责
 - [x] Ontology Repo：DSL 版本库（validate/build/diff/tag/rollback/conformance）
 - [x] 12 治理场景 × 多轮会议/邮件交互模拟测试套件
 - [x] 分层组织本体：通用岗位层 + 4 行业原型 + 岗位职责对齐推理
+- [x] GitHub Actions CI — 6 作业矩阵（Python 3.10/3.12 × HermiT/fallback × agent/无 langchain）+ 本体 DSL 静态检查
 - [ ] **Branch / Merge** — 本体版本库分支模型
 - [ ] **更多行业原型** — 金融银行 / 教育K12 / 物流供应链（纯 YAML 词汇数据，零代码）
 - [ ] **Web 驾驶舱组织面板** — 错配决策可视化标记
