@@ -75,6 +75,9 @@ class Config:
     app: AppConfig
     workspace: Path = WORKSPACE
     data_dir: str = "data"
+    # 典型公司原型（org 词汇表的行业上下文）：如 pharma / hospital / battery / internet-med。
+    # 声明后行业特化定义类生效；None = 通用治理模式（行业类静默，岗位对齐仍可用通用层）。
+    archetype: Optional[str] = None
 
     def data_path(self) -> Path:
         """Resolve data directory under workspace."""
@@ -109,7 +112,11 @@ def load_config() -> Config:
         debug=os.getenv("DEBUG", "false").lower() in ("true", "1", "yes"),
     )
 
-    cfg = Config(llm=llm, app=app)
+    cfg = Config(
+        llm=llm,
+        app=app,
+        archetype=(os.getenv("MOSS_ARCHETYPE") or None),
+    )
     # Ensure data directory exists
     cfg.data_path().mkdir(parents=True, exist_ok=True)
     return cfg

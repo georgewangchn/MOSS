@@ -701,6 +701,16 @@ def meeting():
     type=click.Choice(["LOW", "MEDIUM", "HIGH"]),
     help="Set risk level",
 )
+@click.option(
+    "--owner-role",
+    "owner_role",
+    help="管理岗位（org 词汇表标准名或别名，如 首席财务官/质量负责人；moss org show 查看）",
+)
+@click.option(
+    "--domain",
+    "domain_opt",
+    help="业务域（org 词汇表标准名或别名，如 财务/GMP生产/电池安全）",
+)
 def amend(
     decision_id: str,
     owner: Optional[str],
@@ -711,6 +721,8 @@ def amend(
     title: Optional[str],
     progress: Optional[float],
     risk: Optional[str],
+    owner_role: Optional[str],
+    domain_opt: Optional[str],
 ):
     """Modify decision attributes."""
     engine = get_engine()
@@ -741,6 +753,10 @@ def amend(
         kwargs["progress"] = progress
     if risk:
         kwargs["risk_level"] = risk
+    if owner_role:
+        kwargs["owner_role"] = owner_role
+    if domain_opt:
+        kwargs["domain"] = domain_opt
 
     if kwargs:
         engine.update_decision(decision_id, **kwargs)
@@ -1146,6 +1162,92 @@ def attention():
                   f"[dim]{len(stalled)}停滞[/dim][/bold]")
 
 
+@main.group()
+def org():
+    """组织治理词汇表（org 段：通用岗位 + 行业/公司原型分层）。"""
+
+
+def _load_org_vocab():
+    from moss.ontorepo.loader import default_dsl_path, load_model
+    model = load_model(default_dsl_path())
+    if model.org is None:
+        raise click.ClickException("本体 DSL 缺少 org 段（moss.onto.yaml）")
+    return model.org
+
+
+@org.command(name="list")
+def org_list():
+    """列出可用的典型公司原型。"""
+    orgv = _load_org_vocab()
+    active = None
+    try:
+        from moss.config import get_config
+        active = get_config().archetype
+    except Exception:
+        pass
+
+    table = Table(title="组织原型（MOSS_ARCHETYPE 可选值）")
+    table.add_column("id", style="cyan")
+    table.add_column("原型")
+    table.add_column("行业")
+    table.add_column("专业岗位", justify="right")
+    table.add_column("特有业务域")
+    table.add_column("状态")
+    for a in orgv.archetypes:
+        table.add_row(
+            a.id, a.label, a.industry, str(len(a.positions)),
+            "、".join(a.extra_domains) or "—",
+            "[green]当前[/green]" if active == a.id else "",
+        )
+    console.print(table)
+    if active and orgv.archetype_by_id(active) is None:
+        console.print(f"[red]⚠ MOSS_ARCHETYPE='{active}' 不在词汇表中 —— 行业语义未生效，请修正拼写[/red]")
+    console.print(f"[dim]通用岗位 {len(orgv.universal_positions)} 个 · 通用业务域 {len(orgv.domains)} 个 · 换公司 = 换 MOSS_ARCHETYPE，通用层不变[/dim]")
+
+
+@org.command(name="show")
+@click.argument("archetype_id", required=False)
+def org_show(archetype_id: Optional[str]):
+    """展示组织词汇表：缺省=通用层；指定原型=通用层+该原型专业岗位。"""
+    orgv = _load_org_vocab()
+    arch = None
+    if archetype_id:
+        arch = orgv.archetype_by_id(archetype_id)
+        if arch is None:
+            valid = ", ".join(a.id for a in orgv.archetypes)
+            raise click.ClickException(f"未知原型 '{archetype_id}'。可用: {valid}")
+        console.print(f"[bold]{arch.label}[/bold]（行业：{arch.industry}）")
+
+    console.print("\n[bold]通用岗位层（所有公司一致）[/bold]")
+    t1 = Table()
+    t1.add_column("岗位", style="cyan")
+    t1.add_column("汇报给")
+    t1.add_column("主业务域")
+    t1.add_column("职责")
+    t1.add_column("常见叫法")
+    for p in orgv.universal_positions:
+        t1.add_row(p.label, p.reports_to or "—", p.domain,
+                   "、".join(p.duties), "、".join(p.aliases) or "—")
+    console.print(t1)
+
+    if arch is not None:
+        console.print(f"\n[bold]{arch.label} 专业岗位层[/bold]")
+        t2 = Table()
+        t2.add_column("岗位", style="cyan")
+        t2.add_column("汇报给")
+        t2.add_column("主业务域")
+        t2.add_column("职责")
+        t2.add_column("常见叫法")
+        for p in arch.positions:
+            t2.add_row(p.label, p.reports_to or "—", p.domain,
+                       "、".join(p.duties), "、".join(p.aliases) or "—")
+        console.print(t2)
+        console.print(f"[dim]特有业务域：{'、'.join(arch.all_domains())}[/dim]")
+
+    console.print(f"\n[dim]通用业务域：{'、'.join(orgv.domains)}[/dim]")
+    console.print("[dim]对齐三分类：岗位职责覆盖决策.domain → role_aligned；在册但不覆盖 → role_misaligned；岗位不在词汇表 → role_unregistered[/dim]")
+
+
 @main.command()
 def hermit():
     """Show OWL classification for all governed objects (per moss.onto.yaml)."""
@@ -1479,6 +1581,21 @@ def _show_decision(engine, decision_id: str):
     table.add_row("Risk Level", f"[{s}]{decision.risk_level}[/{s}]")
     table.add_row("Owner", decision.owner or "[red]UNASSIGNED[/red]")
     table.add_row("Department", decision.department or "—")
+    if decision.owner_role or decision.domain:
+        table.add_row("Owner Role", decision.owner_role or "—")
+        table.add_row("Business Domain", decision.domain or "—")
+        # 对齐三分类即时反馈（无推理副作用：走 reason 一次拿三分类）
+        try:
+            from moss.owl_ontology import reason_graph
+            r = reason_graph(engine.graph)
+            if decision.id in r.get("role_aligned", []):
+                table.add_row("Role Alignment", "[green]✓ aligned[/green]")
+            elif decision.id in r.get("role_misaligned", []):
+                table.add_row("Role Alignment", "[red]✗ misaligned — 岗位职责不覆盖该业务域[/red]")
+            elif decision.id in r.get("role_unregistered", []):
+                table.add_row("Role Alignment", "[yellow]? unregistered — 岗位不在词汇表[/yellow]")
+        except Exception:
+            pass
     table.add_row("Source", decision.source)
     table.add_row("Created", decision.created_at.strftime("%Y-%m-%d %H:%M"))
     deadline_str = decision.deadline.strftime("%Y-%m-%d") if decision.deadline else "[yellow]NOT SET[/yellow]"

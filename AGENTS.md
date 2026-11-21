@@ -49,7 +49,9 @@ moss onto build  # compile ontology DSL → OWL/Turtle
 moss reset       # wipe governance data (destructive — confirm with user)
 ```
 
-The CLI surface is wider than the list above — run `moss --help` before assuming a command doesn't exist. Notable others: `migrate`, `runtime`, `meeting`, `show`, `compile`, `checkpoint`, `alert`, `status`, `brief`, `attention`, `hermit`; command groups `connect` (email source) and `skills` (list/load/remove). `moss onto` also has `validate | show | commit | log | diff | tag | rollback | conformance` — prefer `moss onto validate` after editing the DSL.
+The CLI surface is wider than the list above — run `moss --help` before assuming a command doesn't exist. Notable others: `migrate`, `runtime`, `meeting`, `show`, `compile`, `checkpoint`, `alert`, `status`, `brief`, `attention`, `hermit`; command groups `connect` (email source), `skills` (list/load/remove), and `org` (list/show the layered organizational vocabulary — universal positions + industry archetypes). `moss onto` also has `validate | show | commit | log | diff | tag | rollback | conformance` — prefer `moss onto validate` after editing the DSL.
+
+**Company archetype**: set `MOSS_ARCHETYPE` (workspace `.env`; see `moss org list` for ids: pharma/hospital/battery/internet-med) to activate industry-specialized defined classes. Without it MOSS runs in universal-governance mode — industry classes stay silent, role-alignment still works against the universal position layer. Switching company = switching this one variable.
 
 There is **no lint, typecheck, or formatter config** in this repo (no ruff/mypy config files; pyproject `[dev]` only pulls pytest + pytest-cov). CONTRIBUTING.md mentions ruff/mypy aspirationally — they are not wired up. Do not claim a lint/typecheck gate exists.
 

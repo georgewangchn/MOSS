@@ -89,10 +89,19 @@ RULES:
   - owner=null UNLESS a specific person/department is explicitly named
   - deadline=null UNLESS a specific date/time is explicitly mentioned
   - dependency=null UNLESS a collaborating department/unit is explicitly named
+  - owner_role=null UNLESS a management POSITION is explicitly named — THEN map it to the STANDARD label from the position vocabulary below (synonyms like 财务总监→首席财务官)
+  - domain=null UNLESS a business DOMAIN is explicitly named — THEN map it to the STANDARD domain name from the domain vocabulary below (预算→财务, 人事→人力)
   - DO NOT hallucinate or infer missing data"""
+    schema += _org_vocabulary_block()
     if skill.extraction_rules:
         schema += f"\n\nDOMAIN-SPECIFIC RULES ({skill.name}):\n{skill.extraction_rules}"
     return schema
+
+
+def _org_vocabulary_block() -> str:
+    """转发到 prompts.org_vocabulary_block（两条抽取路径共用同一实现）。"""
+    from moss.prompts import org_vocabulary_block
+    return org_vocabulary_block()
 
 
 SECTION_PROMPT = """Extract governance objects from this document section.
@@ -109,7 +118,7 @@ EXTRACTION vs VALIDATION — CRITICAL SEPARATION:
 
 Output JSON with keys: issues, decisions, assignments, updates, risks.
 For each decision, include a "source_quote" field with the exact text that supports the extraction.
-Each assignment object has: decision_title, owner, department, dependency, deadline, raw_statement.
+Each assignment object has: decision_title, owner, owner_role, domain, department, dependency, deadline, raw_statement.
 
 EXAMPLE — vague meeting minutes without specific owners:
   会议结论：
@@ -140,7 +149,7 @@ Expected output:
     {{"title": "完成Q1审计", "raw_statement": "3月底前完成Q1审计，张部长负责", "source_quote": "2. 3月底前完成Q1审计，张部长负责。"}}
   ],
   "assignments": [
-    {{"decision_title": "完成Q1审计", "owner": "张部长", "deadline": "2026-03-31", "raw_statement": "3月底前完成Q1审计，张部长负责"}}
+    {{"decision_title": "完成Q1审计", "owner": "张部长", "owner_role": null, "domain": null, "deadline": "2026-03-31", "raw_statement": "3月底前完成Q1审计，张部长负责"}}
   ],
   "issues": [],
   "updates": [],
@@ -496,6 +505,10 @@ class AgentExtractor:
                         d.department = a["department"]
                     if a.get("dependency"):
                         d.dependency = a["dependency"]
+                    if a.get("owner_role"):
+                        d.owner_role = a["owner_role"]
+                    if a.get("domain"):
+                        d.domain = a["domain"]
                     if a.get("deadline"):
                         try:
                             d.deadline = datetime.fromisoformat(str(a["deadline"]))

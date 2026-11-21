@@ -504,6 +504,12 @@ def test_s10_status_machine_full_path(tmp_path):
     # R7 全量告警：DONE 后 checkpoint 完全静默
     assert alerts_of(eng, did) == []
 
+    # R8 终态保护：DONE 后补充更新/改进度不得回退 progress（终态即验收）
+    eng.add_update(did, "验收后补充归档说明", progress=40.0)
+    assert d.progress == 100.0
+    eng.update_decision(did, progress=10.0)
+    assert d.progress == 100.0
+
 
 # ═══════════════════════════════════════════════════════════════
 # S11 · 多决策大会：跨部门决议 + 协作缺失告警 + 会议简报
@@ -587,10 +593,169 @@ def test_s12_key_person_absence_handover(tmp_path):
     assert alerts_of(eng, did) == [] and classify(eng)["done"] == [did]
 
 
+# ═══════════════════════════════════════════════════════════════
+# S13 · 岗位-职责对齐（医药原型）：专业岗位/通用岗位 × 对齐/错配/未注册
+# ═══════════════════════════════════════════════════════════════
+def test_s13_role_duty_alignment(tmp_path, monkeypatch):
+    import moss.config as cfg
+    monkeypatch.setenv("MOSS_ARCHETYPE", "pharma")
+    monkeypatch.setattr(cfg, "_config_cache", None)
+    eng = make_engine(tmp_path)
+
+    # R1 会议纪要（生产例会）：「注射剂生产线扩产，属 GMP生产 事务，生产负责人牵头」
+    d1 = eng.create_decision(title="注射剂生产线扩产", owner="马厂长",
+                             owner_role="生产负责人", domain="GMP生产",
+                             deadline=datetime.now() + timedelta(days=30)).id
+    # R2 会议纪要（经营会）：「年度预算编制，属财务事务，CFO 负责」
+    d2 = eng.create_decision(title="年度预算编制", owner="钱会计",
+                             owner_role="首席财务官", domain="财务",
+                             deadline=datetime.now() + timedelta(days=45)).id
+    # R3 会议纪要（质量例会）：「偏差调查整改，属质量事务，质量负责人牵头」
+    d3 = eng.create_decision(title="偏差调查整改", owner="孙质量",
+                             owner_role="质量负责人", domain="质量",
+                             deadline=datetime.now() + timedelta(days=14)).id
+    r = classify(eng)
+    assert sorted(r["role_aligned"]) == sorted([d1, d2, d3])     # 岗位域精确匹配
+    assert r["role_misaligned"] == []
+
+    # R4 邮件（越权指派）：「GMP 验证主计划由 CFO 分管」→ CFO 职责不含 GMP生产
+    d4 = eng.create_decision(title="工艺验证主计划", owner="钱会计",
+                             owner_role="首席财务官", domain="GMP生产",
+                             deadline=datetime.now() + timedelta(days=20)).id
+    assert classify(eng)["role_misaligned"] == [d4]
+
+    # R5 邮件（角色不在词汇表）：「数据治理由分管领导负责」→ 未注册 = 数据治理信号（区别于错配）
+    d5 = eng.create_decision(title="数据治理专项", owner="周某",
+                             owner_role="分管领导", domain="信息技术",
+                             deadline=datetime.now() + timedelta(days=60)).id
+    r = classify(eng)
+    assert r["role_misaligned"] == [d4]
+    assert r["role_unregistered"] == [d5]
+
+    # R6 会议纪要（只声明单侧）：有岗位无域 / 有域无岗位 → 两个对齐类都不进
+    d6 = eng.create_decision(title="培训体系升级", owner="吴某",
+                             owner_role="首席人才官",
+                             deadline=datetime.now() + timedelta(days=50)).id
+    d7 = eng.create_decision(title="安全库存策略", owner="郑某", domain="供应链",
+                             deadline=datetime.now() + timedelta(days=25)).id
+    r = classify(eng)
+    for did in (d6, d7):
+        assert did not in r["role_aligned"] and did not in r["role_misaligned"]
+
+    # R7 会议纪要（改派纠偏）：d4 改由生产负责人分管 → 离开错配、进入对齐
+    eng.update_decision(d4, owner_role="生产负责人")
+    r = classify(eng)
+    assert d4 in r["role_aligned"] and d4 not in r["role_misaligned"]
+    assert r["role_misaligned"] == [] and r["role_unregistered"] == [d5]
+
+    # R8 真实表述鲁棒性：别名命中 + 高管跨域覆盖 + 域别名归一
+    d8 = eng.create_decision(title="年度资金计划", owner="冯某",
+                             owner_role="财务总监", domain="预算",
+                             deadline=datetime.now() + timedelta(days=30)).id
+    d9 = eng.create_decision(title="集团质量月度评审", owner="总裁办",
+                             owner_role="总经理", domain="质量",
+                             deadline=datetime.now() + timedelta(days=15)).id
+    r = classify(eng)
+    assert d8 in r["role_aligned"]      # 财务总监→CFO 别名；预算→财务 域别名
+    assert d9 in r["role_aligned"]      # 总经理→CEO 别名；covers_all 跨域覆盖质量域
+
+    # 行业上下文经 workspace 常量桥接：医药 ∧ GMP生产 触发行业特化类
+    assert sorted(r["pharma_gmp_production"]) == sorted([d1, d4])
+    assert sorted(r["domain_quality"]) == sorted([d3, d9])
+    assert r["battery_safety"] == []                            # 跨行业类隔离
+
+    # R9 治理人员工作流：对齐信号进入 compile 报告；role-only 也判未注册
+    d10 = eng.create_decision(title="供应商大会筹备", owner="孙某",
+                              owner_role="销售老大",
+                              deadline=datetime.now() + timedelta(days=8)).id
+    d11 = eng.create_decision(title="洁净区改造预算", owner="钱会计",
+                              owner_role="首席财务官", domain="GMP生产",
+                              deadline=datetime.now() + timedelta(days=12)).id
+    r = classify(eng)
+    assert d10 in r["role_unregistered"]                        # 未声明业务域不影响未注册判定
+    assert d11 in r["role_misaligned"]
+    ci5 = compile_of(eng, d5)
+    assert any(c.issue_type == "ROLE_UNREGISTERED" for c in ci5)
+    ci11 = compile_of(eng, d11)
+    assert any(c.issue_type == "ROLE_MISALIGNED" and "首席财务官" in c.message for c in ci11)
+    ci10 = compile_of(eng, d10)
+    assert any(c.issue_type == "ROLE_UNREGISTERED" and "销售老大" in c.message for c in ci10)
+
+
+# ═══════════════════════════════════════════════════════════════
+# S14 · 原型切换：同一份治理数据，换 MOSS_ARCHETYPE 后行业语义随之切换
+# ═══════════════════════════════════════════════════════════════
+def test_s14_archetype_switching(tmp_path, monkeypatch):
+    import moss.config as cfg
+    eng = make_engine(tmp_path)
+
+    def switch(archetype):
+        monkeypatch.setenv("MOSS_ARCHETYPE", archetype)
+        monkeypatch.setattr(cfg, "_config_cache", None)          # 重建配置单例
+
+    # R1 药厂模式：GMP 生产 + 电池安全两类决策同时入库
+    switch("pharma")
+    gmp = eng.create_decision(title="洁净区环境监测", owner="马厂长",
+                              owner_role="生产负责人", domain="GMP生产").id
+    cell = eng.create_decision(title="新型电芯选型", owner="李某",
+                               owner_role="电芯工艺负责人", domain="电芯工艺").id
+    r = classify(eng)
+    assert r["pharma_gmp_production"] == [gmp]
+    assert r["battery_safety"] == []
+    assert r["role_unregistered"] == [cell]                      # 电芯岗位不在药厂词汇表
+
+    # R2 切换到电池厂：同一份 graph 重新推理 → 行业语义翻转
+    switch("battery")
+    r = classify(eng)
+    assert r["pharma_gmp_production"] == []                      # 医药类静默
+    assert cell in r["role_aligned"]                             # 电芯工艺负责人回到词汇表
+    assert gmp in r["role_unregistered"]                         # 药厂生产负责人不在电池厂词汇表
+
+    # R3 电池厂新增安全决策：行业特化类触发
+    safety = eng.create_decision(title="热失控防护升级", owner="王某",
+                                 owner_role="电池安全负责人", domain="电池安全").id
+    r = classify(eng)
+    assert r["battery_safety"] == [safety]
+    assert safety in r["role_aligned"]
+
+    # R4 通用层跨原型恒定：CFO/财务 对齐在两种原型下都成立
+    fin = eng.create_decision(title="季度资金计划", owner="钱会计",
+                              owner_role="首席财务官", domain="财务").id
+    assert fin in classify(eng)["role_aligned"]
+
+    # R5 取消原型声明：行业类全部静默，通用层对齐仍工作（降级路径）
+    monkeypatch.setenv("MOSS_ARCHETYPE", "")
+    monkeypatch.setattr(cfg, "_config_cache", None)
+    r = classify(eng)
+    assert r["battery_safety"] == [] and r["pharma_gmp_production"] == []
+    assert fin in r["role_aligned"] and cell in r["role_unregistered"]
+
+    # R6 落库往返：org 上下文字段（owner_role/domain）持久化不丢失
+    eng.save()
+    eng.reload()
+    d = eng.graph.decisions[fin]
+    assert d.owner_role == "首席财务官" and d.domain == "财务"
+
+
+# ═══════════════════════════════════════════════════════════════
+# 回归：moss demo 种子可装载且组织三态可演示
+# ═══════════════════════════════════════════════════════════════
+def test_demo_seed_loads_with_org_context(tmp_path):
+    """种子装载回归（U-001 created_at 移除曾致 loader 传 None 崩溃）+ 组织三态。"""
+    from moss.commands.init_cmd import load_demo_seed
+    from moss.storage import Storage as _Storage
+    graph = load_demo_seed(_Storage(str(tmp_path)))
+    assert len(graph.decisions) == 4 and len(graph.issues) == 2 and len(graph.updates) == 2
+    r = oo.reason_graph(graph)
+    assert sorted(r["role_aligned"]) == ["demo-001", "demo-003"]
+    assert r["role_misaligned"] == ["demo-002"]      # CFO 牵头供应商切换（供应链域）
+    assert r["role_unregistered"] == ["demo-004"]    # "分管副总"非标准岗位
+
+
 # ── 套件完整性（防场景漂移的元断言） ───────────────────────────
 
 def test_scenario_matrix_complete():
-    """确保 12 个场景测试函数始终在位（改名/误删会被发现）。"""
+    """确保 14 个场景测试函数始终在位（改名/误删会被发现）。"""
     names = {n for n in globals() if n.startswith("test_s")}
-    for i in range(1, 13):
+    for i in range(1, 15):
         assert any(n.startswith(f"test_s{i:02d}_") for n in names), f"缺少场景 S{i}"

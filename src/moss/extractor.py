@@ -10,6 +10,7 @@ from moss.prompts import (
     INGEST_PROMPT_TEMPLATE,
     MEETING_PROMPT_TEMPLATE,
     SYSTEM_PROMPT,
+    org_vocabulary_block,
 )
 from moss.skills import Skill
 
@@ -23,7 +24,11 @@ class Extractor:
         sys_prompt = skill.system_prompt if skill and skill.system_prompt else SYSTEM_PROMPT
         messages = [
             {"role": "system", "content": sys_prompt},
-            {"role": "user", "content": INGEST_PROMPT_TEMPLATE.format(text=text, existing_context=existing_context or "(No existing decisions or issues)")},
+            {"role": "user", "content": INGEST_PROMPT_TEMPLATE.format(
+                text=text,
+                existing_context=existing_context or "(No existing decisions or issues)",
+                org_vocabulary=org_vocabulary_block(),
+            )},
         ]
         try:
             raw = self._call_llm(messages)

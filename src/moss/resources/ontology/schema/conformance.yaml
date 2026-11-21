@@ -86,8 +86,35 @@ clauses:
     check: has_defined_class_equiv
     args: {result_key: stale_update, properties: [isStaleUpdate]}
 
+  - id: gov-org-vocabulary
+    profile: governance
+    desc: "必须声明分层组织词汇表（通用岗位 + 典型公司原型，L0-L3）"
+    check: declares_org_vocabulary
+    args:
+      min_universal_positions: 5
+      required_archetypes: [pharma, hospital, battery, internet-med]
+      min_positions_per_archetype: 3
+
+  - id: gov-domain-value-class
+    profile: governance
+    desc: "质量/合规通用业务域必须由 hasDomain 值约束定义"
+    check: has_value_restriction
+    args: {property: hasDomain, values: [质量, 合规]}
+
+  - id: gov-role-alignment-semantics
+    profile: governance
+    desc: "必须存在岗位对齐三分类（role_aligned / role_misaligned / role_unregistered，均经 computed 布尔正向断言）"
+    check: has_defined_class_equiv
+    args: {result_key: role_misaligned, properties: [isRoleMisaligned]}
+
+  - id: gov-industry-specialized-classes
+    profile: governance
+    desc: "行业特化定义类必须由 hasIndustry ∧ hasDomain 值约束组合定义"
+    check: has_value_restriction
+    args: {property: hasIndustry, values: [医药, 医疗, 汽车, 互联网]}
+
   - id: gov-reasoner-keys
     profile: governance
     desc: "推理必须产出治理语义 result_key (G2/G3 及 Profile 增强)"
     check: reasoner_result_keys
-    args: {keys: [governed, has_owner, has_deadline, critical, high_priority, high_risk, blocked, done, overdue, stale, critical_issue, stale_update, has_dependency, blocked_dependency]}
+    args: {keys: [governed, has_owner, has_deadline, critical, high_priority, high_risk, blocked, done, overdue, stale, critical_issue, stale_update, has_dependency, blocked_dependency, domain_quality, domain_compliance, pharma_gmp_production, hospital_medical_affairs, battery_safety, internet_med_content_compliance, role_aligned, role_misaligned, role_unregistered]}

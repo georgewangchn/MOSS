@@ -62,6 +62,8 @@ YOUR JOB IS EXTRACTION + ALIGNMENT — not validation:
 - Missing fields (owner=null, deadline=null) are EXPECTED from vague documents.
 - DO NOT skip an item just because it has no owner. If the text says "推进XX", extract it.
 
+{org_vocabulary}
+
 ## ONTOLOGY DISTINCTION (CRITICAL)
 
 **Decision** = confirmed resolution/action that has been decided.
@@ -107,16 +109,20 @@ Rules:
    - "XX负责YY" → assignment with owner=XX, decision_title=YY
    - "ZZ部门协同" → assignment with dependency=ZZ
    - "完成时限MM月DD日" → assignment with deadline in YYYY-MM-DD format
-6. If owner not mentioned → set to null
-7. If deadline not mentioned → set to null
-8. DO NOT infer responsibility
-9. DO NOT guess missing fields
+6. owner_role / domain: extract ONLY when a management POSITION or a business DOMAIN is explicitly named
+   - "质量负责人牵头" → owner_role=质量负责人
+   - "属GMP生产事务" / "财务事项" → domain=GMP生产 / 财务
+   - Valid role/domain vocabulary comes from the org table (`moss org show`); if unsure → null
+7. If owner not mentioned → set to null
+8. If deadline not mentioned → set to null
+9. DO NOT infer responsibility
+10. DO NOT guess missing fields
 
 OUTPUT FORMAT:
 {{
   "issues": [{{"title": "...", "description": "...", "severity": "HIGH/MEDIUM/LOW"}}],
   "decisions": [{{"title": "...", "raw_statement": "..."}}],
-  "assignments": [{{"decision_title": "...", "owner": null or "...", "department": null or "...", "deadline": null or "YYYY-MM-DD", "dependency": null or "...", "raw_statement": "..."}}],
+  "assignments": [{{"decision_title": "...", "owner": null or "...", "owner_role": null or "...", "domain": null or "...", "department": null or "...", "deadline": null or "YYYY-MM-DD", "dependency": null or "...", "raw_statement": "..."}}],
   "updates": [],
   "risks": [],
   "candidate_matches": [{{"extracted_title": "...", "existing_id": "D-001 or I-001", "relation": "update or related"}}],
@@ -239,3 +245,34 @@ Output JSON with the following structure:
 }}
 
 Output ONLY the JSON, no other text."""
+
+
+# ============================================================
+# Org vocabulary block - shared by BOTH extraction paths
+# (baseline Extractor + AgentExtractor), so vocabulary awareness
+# survives the no-langchain degradation path.
+# ============================================================
+
+def org_vocabulary_block() -> str:
+    """把当前工作区的 org 词汇表（岗位/域标准名）注入抽取提示词。
+
+    两条抽取路径共用；失败时返回空串（抽取仍可用，仅失去词汇对齐能力）。
+    """
+    try:
+        from moss.models import _active_archetype_id, _org_vocab
+        org = _org_vocab()
+        if org is None:
+            return ""
+        arch = org.archetype_by_id(_active_archetype_id()) if org else None
+        lines = ["## POSITION / DOMAIN VOCABULARY (map owner_role and domain to these STANDARD names):"]
+        lines.append("- positions (universal): " + "、".join(p.label for p in org.universal_positions))
+        if arch:
+            lines.append(f"- positions ({arch.label}): " + "、".join(p.label for p in arch.positions))
+        domains = list(org.domains)
+        if arch:
+            domains = arch.all_domains() + domains
+        lines.append("- domains: " + "、".join(domains))
+        lines.append('- synonyms must be normalized: "财务总监"→"首席财务官", "预算"→"财务", "GMP"→"GMP生产"')
+        return "\n".join(lines)
+    except Exception:
+        return ""

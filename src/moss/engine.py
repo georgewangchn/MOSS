@@ -51,6 +51,8 @@ class GovernanceEngine:
         department: str | None = None,
         dependency: str | None = None,
         depends_on: List[str] | None = None,
+        owner_role: str | None = None,
+        domain: str | None = None,
         deadline: datetime | None = None,
     ) -> Decision:
         did = self.graph.get_next_decision_id()
@@ -63,6 +65,8 @@ class GovernanceEngine:
             department=department,
             dependency=dependency,
             depends_on=depends_on or [],
+            owner_role=owner_role,
+            domain=domain,
             deadline=deadline,
         )
         self.graph.decisions[did] = decision
@@ -94,10 +98,15 @@ class GovernanceEngine:
             raise ValueError(f"Decision {decision_id} not found")
         allowed_fields = {
             "title", "owner", "department", "dependency", "depends_on", "deadline",
-            "status", "progress", "risk_level", "issue_id",
+            "status", "progress", "risk_level", "issue_id", "owner_role", "domain",
         }
         for key, value in kwargs.items():
             if key in allowed_fields:
+                if key == "progress" and value is None:
+                    continue  # progress 非可空类型：None 视为不更新
+                # 终态保护：DONE 后 progress 只能维持 100（转 DONE 即验收，状态机无返工路径）
+                if key == "progress" and decision.status == "DONE":
+                    value = max(value, decision.progress)
                 setattr(decision, key, value)
         decision.last_update_at = datetime.now()
         self.save()
@@ -153,6 +162,9 @@ class GovernanceEngine:
 
         decision = self.graph.decisions[decision_id]
         if progress is not None:
+            # 终态保护：DONE 即验收（progress=100），后续补充更新不得回退进度
+            if decision.status == "DONE":
+                progress = max(progress, decision.progress)
             decision.progress = progress
         if risk:
             decision.risk_level = risk
@@ -474,6 +486,10 @@ class GovernanceEngine:
                 self.assign_owner(d.id, owner, a.get("department"))
                 if a.get("dependency"):
                     d.dependency = a["dependency"]
+                if a.get("owner_role"):
+                    d.owner_role = a["owner_role"]
+                if a.get("domain"):
+                    d.domain = a["domain"]
                 if deadline_str:
                     try:
                         parsed = datetime.fromisoformat(deadline_str)
@@ -494,6 +510,8 @@ class GovernanceEngine:
                     owner=owner,
                     department=a.get("department") or None,
                     dependency=a.get("dependency") or None,
+                    owner_role=a.get("owner_role") or None,
+                    domain=a.get("domain") or None,
                 )
                 if deadline_str:
                     try:

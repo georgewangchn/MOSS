@@ -121,13 +121,26 @@ class GovernanceOntology:
         self.build()
 
     def clear_individuals(self) -> None:
-        """Destroy all individuals while preserving class hierarchy."""
+        """Destroy all individuals while preserving class hierarchy.
+
+        Registry-based destruction for the live instance, plus a world sweep:
+        a fresh GovernanceOntology on a reused owlready2 world (e.g. singleton
+        reset after config/archetype switch) starts with an empty _individuals
+        registry — stale individuals and their stale computed assertions
+        (truthy-only assertion is never retracted) would otherwise survive
+        and pollute HermiT classification.
+        """
         for ind in list(self._individuals.values()):
             try:
                 destroy_entity(ind)
             except Exception:
                 pass
         self._individuals.clear()
+        for ind in list(self.onto.individuals()):
+            try:
+                destroy_entity(ind)
+            except Exception:
+                pass
 
     # ── OWL Definition (compiled from DSL) ────────────────────
 
@@ -457,6 +470,11 @@ def _fallback_reason(graph) -> Dict[str, Any]:
         "Decision": [(did, d) for did, d in graph.decisions.items()],
         "Issue": [(iid, i) for iid, i in graph.issues.items()],
         "Update": [(u.id, u) for u in graph.updates],
+        # parent: Thing 的定义类对所有概念个体求值；顺序与 load_graph 个体插入序一致
+        # （decisions → updates → issues），保证与 HermiT reason() 的列表顺序逐键相同
+        "Thing": [(did, d) for did, d in graph.decisions.items()]
+        + [(u.id, u) for u in graph.updates]
+        + [(iid, i) for iid, i in graph.issues.items()],
     }
 
     for dc in model.defined_classes:

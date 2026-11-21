@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS decisions (
     source TEXT DEFAULT 'ingest',
     issue_id TEXT,
     owner TEXT,
+    owner_role TEXT,
+    domain TEXT,
     department TEXT,
     dependency TEXT,
     depends_on TEXT DEFAULT '[]',
@@ -115,6 +117,10 @@ class Storage:
         cols = {row[1] for row in conn.execute("PRAGMA table_info(decisions)")}
         if "depends_on" not in cols:
             conn.execute("ALTER TABLE decisions ADD COLUMN depends_on TEXT DEFAULT '[]'")
+        if "owner_role" not in cols:
+            conn.execute("ALTER TABLE decisions ADD COLUMN owner_role TEXT")
+        if "domain" not in cols:
+            conn.execute("ALTER TABLE decisions ADD COLUMN domain TEXT")
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self.db_path), timeout=30.0)
@@ -134,12 +140,13 @@ class Storage:
             for did, d in graph.decisions.items():
                 conn.execute(
                     """INSERT INTO decisions
-                    (id, title, source, issue_id, owner, department, dependency,
-                     depends_on, created_at, deadline, status, progress, risk_level,
+                    (id, title, source, issue_id, owner, owner_role, domain,
+                     department, dependency, depends_on,
+                     created_at, deadline, status, progress, risk_level,
                      last_update_at, raw_statement)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                    (did, d.title, d.source, d.issue_id, d.owner, d.department,
-                     d.dependency,
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (did, d.title, d.source, d.issue_id, d.owner, d.owner_role, d.domain,
+                     d.department, d.dependency,
                      json.dumps(d.depends_on),
                      d.created_at.isoformat() if d.created_at else None,
                      d.deadline.isoformat() if d.deadline else None,
@@ -203,6 +210,8 @@ class Storage:
                         source=row["source"] or "ingest",
                         issue_id=row["issue_id"],
                         owner=row["owner"],
+                        owner_role=row["owner_role"],
+                        domain=row["domain"],
                         department=row["department"],
                         dependency=row["dependency"],
                         depends_on=_parse_json_list(row["depends_on"]),

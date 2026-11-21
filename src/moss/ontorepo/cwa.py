@@ -42,7 +42,17 @@ def evaluate(
 
     t = expr.type
     if t == "class":
-        return expr.name in ("Thing", type(subject).__name__)
+        if expr.name in ("Thing", type(subject).__name__):
+            return True
+        # class 节点引用定义类（与 HermiT _resolve_class 对齐）：递归求值其 equivalent_to。
+        # 下钻用副本集合：共享集合会被 not/or 兄弟分支污染（先 not(class X) 再 class X 时
+        # 第二次查 seen 误判 False，与 HermiT 分歧）；副本同样保证 A≡B≡A 环确定性终止。
+        if defined and expr.name in defined:
+            key = (id(subject), expr.name)
+            if key in _seen:
+                return False
+            return evaluate(defined[expr.name].equivalent_to, subject, graph, binding, defined, now, _seen | {key})
+        return False
     if t == "and":
         return all(evaluate(o, subject, graph, binding, defined, now, _seen) for o in expr.operands)
     if t == "or":

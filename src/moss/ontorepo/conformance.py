@@ -140,6 +140,35 @@ def _has_object_property(model, raw, args):
     return False, f"缺少对象属性 {name}"
 
 
+@register("declares_org_vocabulary")
+def _declares_org_vocabulary(model, raw, args):
+    """组织词汇表：通用岗位数下限 + 必需原型 + 每原型岗位数下限。"""
+    org = model.org
+    if org is None:
+        return False, "缺少 org 段（通用岗位 + 原型分层词汇表）"
+    problems = []
+    min_universal = args.get("min_universal_positions", 0)
+    if len(org.universal_positions) < min_universal:
+        problems.append(f"通用岗位仅 {len(org.universal_positions)} < {min_universal}")
+    required = set(args.get("required_archetypes", []))
+    have = {a.id for a in org.archetypes}
+    missing = required - have
+    if missing:
+        problems.append(f"缺少原型: {sorted(missing)}")
+    min_positions = args.get("min_positions_per_archetype", 0)
+    for a in org.archetypes:
+        if len(a.positions) < min_positions:
+            problems.append(f"{a.id} 岗位仅 {len(a.positions)} < {min_positions}")
+        if not a.industry:
+            problems.append(f"{a.id} 缺行业声明")
+    if problems:
+        return False, "; ".join(problems)
+    return True, (
+        f"通用岗位 {len(org.universal_positions)} · 原型 "
+        f"{', '.join(f'{a.id}({len(a.positions)}岗/{a.industry})' for a in org.archetypes)}"
+    )
+
+
 @register("reasoner_result_keys")
 def _reasoner_result_keys(model, raw, args):
     required = set(args.get("keys", []))

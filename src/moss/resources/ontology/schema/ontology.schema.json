@@ -42,10 +42,12 @@
       "type": "object",
       "additionalProperties": {"$ref": "#/$defs/binding"}
     },
+    "org": {"$ref": "#/$defs/org"},
     "rules": {"type": "array"}
   },
   "$defs": {
     "ident": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*$"},
+    "orgIdent": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
     "datatypeName": {"enum": ["string", "float", "integer", "boolean"]},
     "concept": {
       "type": "object",
@@ -160,6 +162,44 @@
         "transform": {"type": "string"},
         "computed": {"type": "string"},
         "relation": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "orgPosition": {
+      "type": "object",
+      "required": ["id", "label", "domain"],
+      "properties": {
+        "id": {"$ref": "#/$defs/orgIdent"},
+        "label": {"type": "string"},
+        "reports_to": {"type": ["string", "null"]},
+        "domain": {"type": "string"},
+        "duties": {"type": "array", "items": {"type": "string"}},
+        "aliases": {"type": "array", "items": {"type": "string"}},
+        "covers_all_domains": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "archetype": {
+      "type": "object",
+      "required": ["id", "label", "industry"],
+      "properties": {
+        "id": {"$ref": "#/$defs/orgIdent"},
+        "label": {"type": "string"},
+        "industry": {"type": "string"},
+        "extra_domains": {"type": "array", "items": {"type": "string"}},
+        "domain_aliases": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}},
+        "positions": {"type": "array", "items": {"$ref": "#/$defs/orgPosition"}}
+      },
+      "additionalProperties": false
+    },
+    "org": {
+      "type": "object",
+      "required": ["universal_positions", "domains", "archetypes"],
+      "properties": {
+        "universal_positions": {"type": "array", "items": {"$ref": "#/$defs/orgPosition"}},
+        "domains": {"type": "array", "items": {"type": "string"}},
+        "domain_aliases": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}},
+        "archetypes": {"type": "array", "items": {"$ref": "#/$defs/archetype"}}
       },
       "additionalProperties": false
     }

@@ -57,6 +57,20 @@ class OwlCompiler:
                         message=f"已停滞 {days_since} 天",
                     ))
 
+            # 组织对齐信号（.get 容忍：DSL 未声明对应定义类时静默跳过）
+            if did in classified.get("role_misaligned", []):
+                results.append(CompileIssue(
+                    decision_id=did, decision_title=decision.title,
+                    issue_type="ROLE_MISALIGNED", severity="WARNING",
+                    message=f"岗位「{decision.owner_role}」职责不覆盖业务域「{decision.domain}」— 建议改派",
+                ))
+            if did in classified.get("role_unregistered", []):
+                results.append(CompileIssue(
+                    decision_id=did, decision_title=decision.title,
+                    issue_type="ROLE_UNREGISTERED", severity="WARNING",
+                    message=f"岗位「{decision.owner_role}」不在组织词汇表 — 请使用标准岗位名或扩充词汇表",
+                ))
+
             if did in classified["governed"]:
                 if not any(r.decision_id == did and r.severity != "OK" for r in results):
                     results.append(CompileIssue(

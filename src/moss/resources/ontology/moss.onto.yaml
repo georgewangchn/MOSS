@@ -12,7 +12,7 @@ protocol_version: "1.0"
 
 ontology:
   iri: "http://moss.org/ontology"
-  version: "0.3.0"            # TBox 语义版本，与仓库/发行版本解耦
+  version: "0.4.0"            # TBox 语义版本，与仓库/发行版本解耦
   label: "MOSS Ontology"
 
 # DSL datatype 名 → Python 类型（编译器用）
@@ -46,6 +46,13 @@ properties:
     - {name: isOverdue,     domain: Decision, range: boolean, functional: true}
     - {name: isStale,       domain: Decision, range: boolean, functional: true}
     - {name: isStaleUpdate, domain: Update,   range: boolean, functional: true}
+    - {name: hasDomain,     domain: Decision, range: string,  functional: true}   # 业务域（org 词汇表约束）
+    - {name: hasOwnerRole,  domain: Decision, range: string,  functional: true}   # 岗位（org 词汇表约束）
+    - {name: hasIndustry,   domain: Decision, range: string,  functional: true}   # 行业（workspace 级断言）
+    - {name: hasArchetype,  domain: Decision, range: string,  functional: true}   # 公司类型（workspace 级断言）
+    - {name: isRoleAligned, domain: Decision, range: boolean, functional: true}   # 岗位-业务域对齐（computed）
+    - {name: isRoleMisaligned, domain: Decision, range: boolean, functional: true} # 岗位-业务域错配（computed，正向断言）
+    - {name: isRoleUnregistered, domain: Decision, range: boolean, functional: true} # 岗位不在词汇表（computed，数据治理信号）
   object:
     - {name: hasUpdate, domain: Decision, range: Update,  functional: false}
     - {name: dependsOn, domain: Decision, range: Decision, functional: false}
@@ -195,6 +202,101 @@ defined_classes:
         - {type: class, name: Decision}
         - {type: some, property: dependsOn, filler: {class: BlockedDecision}}
 
+  # ── 组织治理：业务域 / 行业上下文 / 岗位-职责对齐（org 词汇表驱动） ──
+  - name: QualityDomainDecision
+    parent: Decision
+    result_key: domain_quality
+    comment: "业务域 = 质量（通用域）"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasDomain, value: "质量"}
+
+  - name: ComplianceDomainDecision
+    parent: Decision
+    result_key: domain_compliance
+    comment: "业务域 = 合规（通用域）"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasDomain, value: "合规"}
+
+  - name: RegulatedProductionDecision
+    parent: Decision
+    result_key: pharma_gmp_production
+    comment: "医药行业 ∧ GMP 生产域（药厂特化）"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasIndustry, value: "医药"}
+        - {type: value, property: hasDomain, value: "GMP生产"}
+
+  - name: ClinicalGovernanceDecision
+    parent: Decision
+    result_key: hospital_medical_affairs
+    comment: "医疗行业 ∧ 医务管理域（医院特化）"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasIndustry, value: "医疗"}
+        - {type: value, property: hasDomain, value: "医务管理"}
+
+  - name: BatterySafetyDecision
+    parent: Decision
+    result_key: battery_safety
+    comment: "汽车行业 ∧ 电池安全域（动力电池企业特化）"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasIndustry, value: "汽车"}
+        - {type: value, property: hasDomain, value: "电池安全"}
+
+  - name: MedicalContentComplianceDecision
+    parent: Decision
+    result_key: internet_med_content_compliance
+    comment: "互联网行业 ∧ 医疗内容合规域（互联网医疗平台特化）"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: value, property: hasIndustry, value: "互联网"}
+        - {type: value, property: hasDomain, value: "医疗内容合规"}
+
+  - name: RoleAlignedDecision
+    parent: Decision
+    result_key: role_aligned
+    comment: "决策岗位的业务域覆盖决策业务域（isRoleAligned computed，查 org 词汇表）"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: some, property: isRoleAligned, filler: {datatype: boolean}}
+
+  - name: RoleMisalignedDecision
+    parent: Decision
+    result_key: role_misaligned
+    comment: "岗位在词汇表中、但其职责不覆盖决策业务域 —— 职责越权信号。经 isRoleMisaligned 正向断言：not some(对齐) 在 OWL 开放世界下不可判"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: some, property: isRoleMisaligned, filler: {datatype: boolean}}
+
+  - name: RoleUnregisteredDecision
+    parent: Decision
+    result_key: role_unregistered
+    comment: "决策岗位不在 org 词汇表（当前原型专业岗位+通用岗位，含别名）—— 数据治理信号，区别于职责越权"
+    equivalent_to:
+      type: and
+      operands:
+        - {type: class, name: Decision}
+        - {type: some, property: isRoleUnregistered, filler: {datatype: boolean}}
+
 # 闭世界绑定：每个 property 在 Python 对象侧如何取值。
 # 供 (a) load_graph 装载 ABox、(b) 无 Java 时的 fallback 解释器 共用同一份定义，
 # 从而消除"HermiT 定义类"与"手写 fallback"两份事实源的漂移 (Phase C 生效)。
@@ -216,6 +318,103 @@ abox_binding:
   isStale:       {computed: decision_is_stale}
   isStaleUpdate: {computed: update_is_stale}
   dependsOn:     {relation: depends_on}          # Decision.depends_on ID 列表 → 目标个体
+  hasDomain:     {computed: decision_domain}       # 归一到词汇表标准域名（别名解析）后断言
+  hasOwnerRole:  {field: owner_role}
+  hasIndustry:   {computed: workspace_industry}   # workspace MOSS_ARCHETYPE → 行业，全局常量
+  hasArchetype:  {computed: workspace_archetype}
+  isRoleAligned: {computed: decision_role_aligned} # org 词汇表岗位职责覆盖判定
+  isRoleMisaligned: {computed: decision_role_misaligned}
+  isRoleUnregistered: {computed: decision_role_unregistered}
+
+# ── 组织治理词汇表（分层：通用岗位 → 行业/典型公司原型 → 专业岗位职责） ──
+# 设计：上层通用（每家公司一致），下层按典型公司原型特化；换公司 = 换 workspace
+# 的 MOSS_ARCHETYPE，通用层不动。岗位不作为 OWL 概念/个体（无个体消费场景，
+# 立概念是死 TBox）——本段是受 schema 校验与版本化治理的词汇数据，由
+# computed 绑定（decision_role_aligned / workspace_*）消费、`moss org show` 呈现。
+# 对齐判定：决策.owner_role 匹配岗位(id/label/别名，归一化) ∧ (岗位.covers_all_domains ∨
+# 岗位.domain == 决策.domain（经 resolve_domain 别名归一）∨ 决策.domain ∈ 岗位.duties)；
+# 未注册岗位 → role_unregistered（数据治理），在册但不覆盖 → role_misaligned（职责越权）。
+org:
+  universal_positions:
+    - {id: chairman, label: 董事长,       reports_to: null,  domain: 战略,     duties: [董事会治理, 重大战略决策, 高管任免], aliases: [董事会主席], covers_all_domains: true}
+    - {id: ceo,      label: 首席执行官,   reports_to: chairman, domain: 战略,  duties: [战略规划, 年度经营计划, 重大投资决策, 跨部门协调], aliases: [总经理, CEO], covers_all_domains: true}
+    - {id: cfo,      label: 首席财务官,   reports_to: ceo,   domain: 财务,     duties: [预算管理, 资金调度, 财务报告, 审计对接], aliases: [财务总监, 财务负责人, CFO]}
+    - {id: cho,      label: 首席人才官,   reports_to: ceo,   domain: 人力,     duties: [组织架构, 关键岗位任免, 薪酬绩效, 人才梯队], aliases: [人力资源总监, HR总监, CHO]}
+    - {id: cto,      label: 首席技术官,   reports_to: ceo,   domain: 研发,     duties: [技术路线, 研发项目立项, 技术风险管理], aliases: [技术总监, CTO]}
+    - {id: coo,      label: 首席运营官,   reports_to: ceo,   domain: 生产,     duties: [运营计划, 产能与交付管理, 流程优化], aliases: [运营负责人, COO]}
+    - {id: cmo,      label: 首席营销官,   reports_to: ceo,   domain: 市场营销, duties: [市场策略, 品牌管理, 销售体系, 客户关系], aliases: [营销负责人, CMO]}
+    - {id: clo,      label: 总法律顾问,   reports_to: ceo,   domain: 合规,     duties: [法律事务, 合规体系, 合同审查, 诉讼管理], aliases: [法务负责人, 法务总监, 首席法务官]}
+
+  domains: [战略, 财务, 人力, 研发, 生产, 质量, 合规, 市场营销, 供应链, 安全, 信息技术, 产品]
+  domain_aliases:
+    财务: [预算, 资金]
+    人力: [人事, HR]
+    质量: [品管]
+    供应链: [采购]
+    市场营销: [营销, 市场]
+    信息技术: [IT]
+    安全: [EHS]
+    战略: [战略规划]
+    生产: [制造]
+    研发: [技术开发]
+    合规: [法务合规]
+
+  archetypes:
+    - id: pharma
+      label: 化学制药企业
+      industry: 医药
+      extra_domains: [GMP生产, 注册事务, 药物警戒]
+      domain_aliases:
+        GMP生产: [GMP]
+        注册事务: [注册]
+        药物警戒: [PV, 不良反应监测]
+      positions:
+        - {id: rd-head,          label: 药物研发负责人,   reports_to: cto, domain: 研发,     duties: [在研管线管理, 临床试验方案, 研发合规], aliases: [研发总监]}
+        - {id: production-head,  label: 生产负责人,       reports_to: coo, domain: GMP生产, duties: [生产计划, 工艺验证, 批生产记录], aliases: [生产总监]}
+        - {id: qa-head,          label: 质量负责人,       reports_to: ceo, domain: 质量,     duties: [GMP体系维护, 偏差与CAPA, 变更控制, 成品放行], aliases: [质量受权人, 质量总监, QP]}
+        - {id: reg-head,         label: 注册事务负责人,   reports_to: ceo, domain: 注册事务, duties: [药品注册申报, 法规沟通, 变更备案], aliases: [注册总监]}
+        - {id: pv-head,          label: 药物警戒负责人,   reports_to: ceo, domain: 药物警戒, duties: [不良反应监测, 定期安全性报告, 信号检测], aliases: [PV负责人]}
+
+    - id: hospital
+      label: 三级综合医院
+      industry: 医疗
+      extra_domains: [医务管理, 护理管理, 院感防控]
+      domain_aliases:
+        医务管理: [医务]
+        护理管理: [护理]
+        院感防控: [院感]
+      positions:
+        - {id: medical-affairs-director, label: 医务部主任,     reports_to: ceo, domain: 医务管理, duties: [医疗质量与安全, 医疗流程规范, 医患纠纷处理], aliases: [医务处主任]}
+        - {id: nursing-director,         label: 护理部主任,     reports_to: coo, domain: 护理管理, duties: [护理标准, 护理人力调配, 护理质量检查], aliases: [总护士长]}
+        - {id: pharmacy-director,        label: 药学部主任,     reports_to: coo, domain: 质量,     duties: [药品供应, 处方审核, 合理用药监测], aliases: [药剂科主任]}
+        - {id: infection-control-head,   label: 院感防控负责人, reports_to: coo, domain: 院感防控, duties: [院感监测, 消毒隔离规范, 院感暴发处置], aliases: [院感科主任]}
+        - {id: equipment-director,       label: 医疗设备科主任, reports_to: coo, domain: 供应链,   duties: [设备采购论证, 设备维保, 计量管理], aliases: [设备科主任]}
+
+    - id: battery
+      label: 动力电池企业
+      industry: 汽车
+      extra_domains: [电芯工艺, 电池安全]
+      domain_aliases:
+        电芯工艺: [工艺]
+        电池安全: [热安全]
+      positions:
+        - {id: cell-process-head,     label: 电芯工艺负责人, reports_to: cto, domain: 电芯工艺, duties: [工艺参数优化, 新工艺导入, 良率提升], aliases: [工艺负责人]}
+        - {id: battery-safety-head,   label: 电池安全负责人, reports_to: ceo, domain: 电池安全, duties: [安全标准落地, 热失控防护, 安全事故调查], aliases: [电池安全总监]}
+        - {id: supply-chain-head,     label: 供应链负责人,   reports_to: coo, domain: 供应链,   duties: [原材料采购, 供应商管理, 产能协同], aliases: [采购负责人]}
+        - {id: customer-quality-head, label: 客户质量负责人, reports_to: ceo, domain: 质量,     duties: [客户端质量问题处置, 客诉处理, 质量协议], aliases: [售后质量负责人]}
+
+    - id: internet-med
+      label: 互联网医疗平台
+      industry: 互联网
+      extra_domains: [医疗内容合规, 数据保护]
+      domain_aliases:
+        医疗内容合规: [内容合规]
+        数据保护: [数据安全, 隐私保护]
+      positions:
+        - {id: product-head,         label: 产品负责人,                 reports_to: ceo, domain: 产品,         duties: [产品规划, 需求优先级, 用户体验], aliases: [产品总监]}
+        - {id: med-compliance-head,  label: 医疗合规与数据保护负责人,   reports_to: clo, domain: 医疗内容合规, duties: [医疗内容审核规范, 医师资质管理, 患者数据合规], aliases: [内容合规负责人]}
+        - {id: growth-head,          label: 用户运营负责人,             reports_to: cmo, domain: 市场营销,     duties: [用户增长, 留存运营, 私域运营], aliases: [增长负责人]}
+        - {id: platform-head,        label: 技术平台负责人,             reports_to: cto, domain: 信息技术,     duties: [平台架构, 系统稳定性, 数据安全], aliases: [平台负责人]}
 
 # 预留段：闭世界过程式规则 (compute_priority / MISSING_*/STALE) 未来外置于此。
 # 本增量不实现，仅占位保持 schema 前向兼容。

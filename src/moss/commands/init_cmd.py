@@ -25,6 +25,11 @@ LLM_API_URL={llm_url}
 LLM_API_KEY={llm_key}
 LLM_MODEL={llm_model}
 
+# ── Organization Archetype ─────────────────────────
+# 典型公司原型：决定行业特化语义与专业岗位词汇表（moss org list 查看全部）
+# 不设置 = 通用治理模式（行业类静默，通用岗位层仍生效）
+{archetype_line}
+
 # ── Web Server ─────────────────────────────────────
 APP_HOST=0.0.0.0
 APP_PORT=8000
@@ -46,6 +51,8 @@ _DEMO_SEED = {
             "source": "demo",
             "owner": "张工",
             "department": "技术部",
+            "owner_role": "首席技术官",
+            "domain": "研发",
             "status": "RUNNING",
             "progress": 60.0,
             "risk_level": "HIGH",
@@ -58,6 +65,8 @@ _DEMO_SEED = {
             "source": "demo",
             "owner": None,
             "department": "采购部",
+            "owner_role": "首席财务官",
+            "domain": "供应链",
             "depends_on": ["demo-004"],
             "status": "OPEN",
             "progress": 0.0,
@@ -71,6 +80,8 @@ _DEMO_SEED = {
             "source": "demo",
             "owner": "李部长",
             "department": "财务部",
+            "owner_role": "首席财务官",
+            "domain": "财务",
             "dependency": "技术部",
             "depends_on": ["demo-001"],
             "status": "OPEN",
@@ -86,6 +97,8 @@ _DEMO_SEED = {
             "source": "demo",
             "owner": "王总",
             "department": "人力资源部",
+            "owner_role": "分管副总",
+            "domain": "人力",
             "status": "BLOCKED",
             "progress": 30.0,
             "risk_level": "HIGH",
@@ -182,10 +195,28 @@ def run_init():
 
     api_token = secrets.token_urlsafe(24)
 
+    # Organization archetype selection (industry-specialized semantics)
+    from moss.ontorepo.loader import default_dsl_path, load_model
+    org = load_model(default_dsl_path()).org
+    console.print("\n[bold]Company Archetype (公司原型):[/bold]")
+    console.print("  Industry-specialized positions & semantics; universal layer always active.")
+    console.print("  0. Universal governance (no archetype)")
+    for i, a in enumerate(org.archetypes, start=1):
+        console.print(f"  {i}. {a.label} ({a.industry}) — {len(a.positions)} specialized positions")
+    arch_choice = click.prompt("Select", type=click.IntRange(0, len(org.archetypes)), default=0)
+    if arch_choice > 0:
+        archetype = org.archetypes[arch_choice - 1]
+        archetype_line = f"MOSS_ARCHETYPE={archetype.id}   # {archetype.label}（{archetype.industry}）"
+        console.print(f"[green]✓[/green] Archetype: {archetype.label} — switch anytime via MOSS_ARCHETYPE")
+    else:
+        archetype_line = "# MOSS_ARCHETYPE=pharma   # 可选: pharma/hospital/battery/internet-med"
+        console.print("[dim]Universal mode — set MOSS_ARCHETYPE later to activate industry semantics[/dim]")
+
     # Write .env
     env_content = _ENV_TEMPLATE.format(
         llm_url=llm_url, llm_key=llm_key, llm_model=llm_model,
         api_token=api_token,
+        archetype_line=archetype_line,
     )
     env_path.write_text(env_content, encoding="utf-8")
     console.print(f"\n[green]✓[/green] Config written: {env_path}")
@@ -204,14 +235,14 @@ def run_init():
     ))
 
 
-def load_demo_seed():
+def load_demo_seed(storage: "Storage | None" = None):
     """Load demo seed data into the database."""
     from moss.models import (
         Assignment, Decision, GovernanceGraph, Issue, Update,
     )
     from moss.storage import Storage
 
-    storage = Storage()
+    storage = storage or Storage()
     graph = GovernanceGraph()
 
     from datetime import datetime
@@ -230,6 +261,8 @@ def load_demo_seed():
             owner=d.get("owner"), department=d.get("department"),
             dependency=d.get("dependency"),
             depends_on=d.get("depends_on", []),
+            owner_role=d.get("owner_role"),
+            domain=d.get("domain"),
             status=d.get("status", "OPEN"),
             progress=d.get("progress", 0.0),
             risk_level=d.get("risk_level", "LOW"),
@@ -246,12 +279,15 @@ def load_demo_seed():
         )
 
     for u in _DEMO_SEED["updates"]:
-        graph.updates.append(Update(
+        upd_kwargs = dict(
             id=u["id"], decision_id=u["decision_id"],
             content=u["content"], progress=u.get("progress"),
             source=u.get("source", "demo"),
-            created_at=_dt(u.get("created_at")),
-        ))
+        )
+        created = _dt(u.get("created_at"))
+        if created:  # created_at 必填：缺省时让默认值（now）生效，不可显式传 None
+            upd_kwargs["created_at"] = created
+        graph.updates.append(Update(**upd_kwargs))
 
     for a in _DEMO_SEED["assignments"]:
         graph.assignments.append(Assignment(
